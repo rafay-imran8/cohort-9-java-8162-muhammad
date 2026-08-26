@@ -34,9 +34,14 @@ function Register() {
         setLoading(true);
 
         try {
-            await api.post("/api/v1/auth/register", formData);
+            await api.post(
+                "/api/v1/auth/register",
+                formData
+            );
 
-            setSuccess("Registration successful. Redirecting to login...");
+            setSuccess(
+                "Registration successful. Redirecting to login..."
+            );
 
             setTimeout(() => {
                 navigate("/login");
@@ -45,15 +50,17 @@ function Register() {
             if (err.response?.status === 409) {
                 setError(
                     err.response.data?.message ||
-                    "Email or phone number already exists"
+                        "Email or phone number already exists."
                 );
             } else if (err.response?.status === 400) {
                 setError(
                     err.response.data?.message ||
-                    "Please check your information"
+                        "Please check your information."
                 );
             } else {
-                setError("Unable to connect to the server");
+                setError(
+                    "Unable to connect to the server."
+                );
             }
         } finally {
             setLoading(false);
@@ -61,98 +68,143 @@ function Register() {
     };
 
     return (
-        <div>
-            <h1>Create Account</h1>
-
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="firstname">
-                        First Name
-                    </label>
-
-                    <input
-                        id="firstname"
-                        name="firstname"
-                        type="text"
-                        value={formData.firstname}
-                        onChange={handleChange}
-                        required
-                    />
+        <div className="auth-page">
+            <div className="auth-card">
+                <div className="auth-header">
+                    <h1>Create Account</h1>
+                    <p>
+                        Create your account to start managing
+                        contacts.
+                    </p>
                 </div>
 
-                <div>
-                    <label htmlFor="lastname">
-                        Last Name
-                    </label>
+                <form
+                    className="form"
+                    onSubmit={handleSubmit}
+                >
+                    <div className="form-group">
+                        <label htmlFor="firstname">
+                            First Name
+                        </label>
 
-                    <input
-                        id="lastname"
-                        name="lastname"
-                        type="text"
-                        value={formData.lastname}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
+                        <input
+                            id="firstname"
+                            name="firstname"
+                            type="text"
+                            placeholder="John"
+                            value={formData.firstname}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                <div>
-                    <label htmlFor="email">
-                        Email
-                    </label>
+                    <div className="form-group">
+                        <label htmlFor="lastname">
+                            Last Name
+                        </label>
 
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
+                        <input
+                            id="lastname"
+                            name="lastname"
+                            type="text"
+                            placeholder="Doe"
+                            value={formData.lastname}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                <div>
-                    <label htmlFor="phoneNumber">
-                        Phone Number
-                    </label>
+                    <div className="form-group">
+                        <label htmlFor="email">
+                            Email
+                        </label>
 
-                    <input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        type="tel"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            placeholder="john@example.com"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                <div>
-                    <label htmlFor="password">
-                        Password
-                    </label>
+                    <div className="form-group">
+                        <label htmlFor="phoneNumber">
+                            Phone Number
+                        </label>
 
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
+                        <input
+                            id="phoneNumber"
+                            name="phoneNumber"
+                            type="tel"
+                            placeholder="03001234567"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                {error && <p>{error}</p>}
+                    <div className="form-group">
+                        <label htmlFor="password">
+                            Password
+                        </label>
 
-                {success && <p>{success}</p>}
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            placeholder="Create a password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                <button type="submit" disabled={loading}>
-                    {loading ? "Creating account..." : "Register"}
-                </button>
-            </form>
+                    {error && (
+                        <div className="message message-error">
+                            {error}
+                        </div>
+                    )}
 
-            <p>
-                Already have an account?{" "}
-                <Link to="/login">Login</Link>
-            </p>
+                    {success && (
+                        <div className="message message-success">
+                            {success}
+                        </div>
+                    )}
+
+                    <button
+                        className="btn btn-primary btn-full"
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "Creating account..."
+                            : "Create Account"}
+                    </button>
+                </form>
+
+                <p
+                    style={{
+                        marginTop: "22px",
+                        textAlign: "center",
+                        color: "var(--muted)",
+                        fontSize: "14px",
+                    }}
+                >
+                    Already have an account?{" "}
+                    <Link
+                        to="/login"
+                        style={{
+                            color: "var(--primary)",
+                            fontWeight: 600,
+                        }}
+                    >
+                        Sign in
+                    </Link>
+                </p>
+            </div>
         </div>
     );
 }
