@@ -98,9 +98,7 @@ function ContactDetails() {
             <div>
                 <p>{error}</p>
 
-                <Link to="/dashboard">
-                    Back to Dashboard
-                </Link>
+                <Link to="/dashboard"> Back to Dashboard </Link>
             </div>
         );
     }

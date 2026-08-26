@@ -1,9 +1,19 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
-    const { logout } = useAuth();
+    const { isAuthenticated, logout, user } = useAuth();
+    const location = useLocation();
     const navigate = useNavigate();
+
+    if (!isAuthenticated) {
+        return null;
+    }
+
+    const firstName =
+        user?.firstName ||
+        user?.firstname ||
+        "";
 
     const handleLogout = () => {
         logout();
@@ -12,46 +22,51 @@ function Navbar() {
 
     return (
         <nav className="navbar">
-            <div className="navbar-inner">
-                <NavLink
+            <Link
+                to="/dashboard"
+                className="navbar-brand"
+            >
+                ContactHub
+            </Link>
+
+            <div className="navbar-links">
+                <Link
                     to="/dashboard"
-                    className="navbar-brand"
+                    className={
+                        location.pathname === "/dashboard" ||
+                        location.pathname === "/"
+                            ? "nav-link active"
+                            : "nav-link"
+                    }
                 >
-                    Contact Manager
-                </NavLink>
+                    Contacts
+                </Link>
 
-                <div className="navbar-links">
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) =>
-                            `navbar-link ${
-                                isActive ? "active" : ""
-                            }`
-                        }
-                    >
-                        Contacts
-                    </NavLink>
+                <Link
+                    to="/profile"
+                    className={
+                        location.pathname === "/profile"
+                            ? "nav-link active"
+                            : "nav-link"
+                    }
+                >
+                    Profile
+                </Link>
 
-                    <NavLink
-                        to="/profile"
-                        className={({ isActive }) =>
-                            `navbar-link ${
-                                isActive ? "active" : ""
-                            }`
-                        }
-                    >
-                        Profile
-                    </NavLink>
-
-                    <button
-                        type="button"
-                        className="navbar-link navbar-logout"
-                        onClick={handleLogout}
-                    >
-                        Logout
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    className="nav-logout"
+                    onClick={handleLogout}
+                >
+                    Logout
+                </button>
             </div>
+
+            {firstName && (
+                <div className="navbar-user">
+                    Hi, {firstName}
+                </div>
+            )}
         </nav>
     );
 }

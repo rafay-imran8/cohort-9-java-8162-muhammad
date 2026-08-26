@@ -1,18 +1,12 @@
-import { useAuth } from "./context/AuthContext";
-import Navbar from "./components/Navbar";
 import AppRoutes from "./routes/AppRoutes";
-
-import "./App.css";
+import Navbar from "./components/Navbar";
 
 function App() {
-    const { isAuthenticated } = useAuth();
-
     return (
-        <div className="app-layout">
-            {isAuthenticated && <Navbar />}
-
+        <>
+            <Navbar />
             <AppRoutes />
-        </div>
+        </>
     );
 }
 

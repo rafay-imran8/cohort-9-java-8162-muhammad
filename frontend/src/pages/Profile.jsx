@@ -1,332 +1,186 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 
-function decodeToken(token) {
-    try {
-        const payload = token.split(".")[1];
-
-        if (!payload) {
-            return {};
-        }
-
-        return JSON.parse(
-            atob(
-                payload
-                    .replace(/-/g, "+")
-                    .replace(/_/g, "/")
-            )
-        );
-    } catch {
-        return {};
-    }
-}
-
 function Profile() {
-    const { token, logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    const [showPasswordForm, setShowPasswordForm] =
-        useState(false);
-
-    const [currentPassword, setCurrentPassword] =
-        useState("");
-
-    const [newPassword, setNewPassword] =
-        useState("");
-
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
+    const [profile, setProfile] = useState(user);
+    const [loading, setLoading] = useState(!user);
     const [error, setError] = useState("");
 
-    const user = useMemo(() => {
-        const storedUser = localStorage.getItem("user");
+    useEffect(() => {
+        const loadProfile = async () => {
+            /*
+             * If user information was already saved during login,
+             * use it immediately.
+             */
+            if (user) {
+                setProfile(user);
+                setLoading(false);
+                return;
+            }
 
-        if (storedUser) {
+            /*
+             * We don't have a stored user object, so try to retrieve
+             * the current user from the backend.
+             */
             try {
-                return JSON.parse(storedUser);
-            } catch {
-                // Fall through to JWT information.
+                const response = await api.get("/api/v1/users/me");
+
+                setProfile(response.data);
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify(response.data)
+                );
+            } catch (err) {
+                setError(
+                    err.response?.data?.message ||
+                    "Unable to load profile."
+                );
+            } finally {
+                setLoading(false);
             }
-        }
+        };
 
-        return decodeToken(token || "");
-    }, [token]);
-
-    const firstName =
-        user?.firstName ||
-        user?.firstname ||
-        "";
-
-    const lastName =
-        user?.lastName ||
-        user?.lastname ||
-        "";
-
-    const email = user?.email || user?.sub || "Not available";
-
-    const phoneNumber =
-        user?.phoneNumber ||
-        user?.phone ||
-        "Not available";
-
-    const displayName =
-        `${firstName} ${lastName}`.trim() ||
-        email;
-
-    const initials =
-        `${firstName?.[0] || ""}${
-            lastName?.[0] || ""
-        }`.toUpperCase() ||
-        email[0]?.toUpperCase() ||
-        "U";
-
-    const handleChangePassword = async (event) => {
-        event.preventDefault();
-
-        setMessage("");
-        setError("");
-
-        if (newPassword.length < 6) {
-            setError(
-                "New password must be at least 6 characters."
-            );
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const response = await api.post(
-                "/api/v1/auth/change",
-                {
-                    currentPassword,
-                    newPassword,
-                }
-            );
-
-            setMessage(
-                response.data?.message ||
-                    "Password changed successfully."
-            );
-
-            setCurrentPassword("");
-            setNewPassword("");
-            setShowPasswordForm(false);
-        } catch (err) {
-            if (err.response?.status === 401) {
-                setError(
-                    err.response.data?.message ||
-                        "Current password is incorrect."
-                );
-            } else if (err.response?.status === 400) {
-                setError(
-                    err.response.data?.message ||
-                        "Please check your password."
-                );
-            } else {
-                setError(
-                    "Unable to change password."
-                );
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+        loadProfile();
+    }, [user]);
 
     const handleLogout = () => {
         logout();
         navigate("/login");
     };
 
+    if (loading) {
+        return (
+            <main className="page-container">
+                <div className="loading-state">
+                    Loading profile...
+                </div>
+            </main>
+        );
+    }
+
+    const firstName =
+        profile?.firstName ||
+        profile?.firstname ||
+        "";
+
+    const lastName =
+        profile?.lastName ||
+        profile?.lastname ||
+        "";
+
+    const fullName =
+        `${firstName} ${lastName}`.trim() ||
+        "User";
+
     return (
         <main className="page-container">
-            <div className="page-header">
-                <h1>Profile</h1>
-                <p>
-                    View your account information and manage
-                    your account.
-                </p>
-            </div>
+            <div className="profile-page">
+                <div className="page-header">
+                    <div>
+                        <span className="eyebrow">
+                            ACCOUNT
+                        </span>
 
-            <div className="profile-card">
-                <div className="profile-header">
-                    <div className="profile-avatar">
-                        {initials}
+                        <h1>My Profile</h1>
+
+                        <p>
+                            View and manage your account information.
+                        </p>
                     </div>
 
-                    <h1>{displayName}</h1>
-
-                    <p>{email}</p>
+                    <Link
+                        to="/dashboard"
+                        className="secondary-button"
+                    >
+                        Back to Contacts
+                    </Link>
                 </div>
 
-                <div className="profile-body">
-                    <div className="profile-info">
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">
-                                First Name
-                            </span>
+                {error && (
+                    <div className="error-message">
+                        {error}
+                    </div>
+                )}
 
-                            <span className="profile-info-value">
-                                {firstName ||
-                                    "Not available"}
-                            </span>
-                        </div>
-
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">
-                                Last Name
-                            </span>
-
-                            <span className="profile-info-value">
-                                {lastName ||
-                                    "Not available"}
-                            </span>
-                        </div>
-
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">
-                                Email
-                            </span>
-
-                            <span className="profile-info-value">
-                                {email}
-                            </span>
-                        </div>
-
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">
-                                Phone
-                            </span>
-
-                            <span className="profile-info-value">
-                                {phoneNumber}
-                            </span>
-                        </div>
+                <section className="profile-card">
+                    <div className="profile-avatar">
+                        {firstName
+                            ? firstName.charAt(0).toUpperCase()
+                            : "U"}
                     </div>
 
-                    {message && (
-                        <div className="message message-success">
-                            {message}
-                        </div>
-                    )}
+                    <div className="profile-heading">
+                        <h2>{fullName}</h2>
 
-                    {error && (
-                        <div className="message message-error">
-                            {error}
-                        </div>
-                    )}
+                        <p>
+                            {profile?.email ||
+                                "No email available"}
+                        </p>
+                    </div>
+                </section>
 
-                    <div className="profile-actions">
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => {
-                                setShowPasswordForm(
-                                    (current) => !current
-                                );
-                                setError("");
-                                setMessage("");
-                            }}
+                <section className="profile-details">
+                    <h2>Personal Information</h2>
+
+                    <div className="profile-grid">
+                        <div className="profile-field">
+                            <span>First Name</span>
+                            <strong>
+                                {firstName || "Not provided"}
+                            </strong>
+                        </div>
+
+                        <div className="profile-field">
+                            <span>Last Name</span>
+                            <strong>
+                                {lastName || "Not provided"}
+                            </strong>
+                        </div>
+
+                        <div className="profile-field">
+                            <span>Email</span>
+                            <strong>
+                                {profile?.email ||
+                                    "Not provided"}
+                            </strong>
+                        </div>
+
+                        <div className="profile-field">
+                            <span>Phone Number</span>
+                            <strong>
+                                {profile?.phoneNumber ||
+                                    "Not provided"}
+                            </strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="profile-actions">
+                    <h2>Account Actions</h2>
+
+                    <div className="action-buttons">
+                        <Link
+                            to="/change-password"
+                            className="primary-button"
                         >
-                            {showPasswordForm
-                                ? "Cancel"
-                                : "Change Password"}
-                        </button>
+                            Change Password
+                        </Link>
 
                         <button
                             type="button"
-                            className="btn btn-danger"
+                            className="danger-button"
                             onClick={handleLogout}
                         >
                             Logout
                         </button>
                     </div>
-
-                    {showPasswordForm && (
-                        <div className="password-panel">
-                            <h2>Change Password</h2>
-
-                            <form
-                                className="form"
-                                onSubmit={
-                                    handleChangePassword
-                                }
-                            >
-                                <div className="form-group">
-                                    <label htmlFor="currentPassword">
-                                        Current Password
-                                    </label>
-
-                                    <input
-                                        id="currentPassword"
-                                        type="password"
-                                        value={
-                                            currentPassword
-                                        }
-                                        onChange={(event) =>
-                                            setCurrentPassword(
-                                                event.target
-                                                    .value
-                                            )
-                                        }
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="newPassword">
-                                        New Password
-                                    </label>
-
-                                    <input
-                                        id="newPassword"
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(event) =>
-                                            setNewPassword(
-                                                event.target
-                                                    .value
-                                            )
-                                        }
-                                        required
-                                    />
-                                </div>
-
-                                <div className="button-row">
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={loading}
-                                    >
-                                        {loading
-                                            ? "Changing..."
-                                            : "Reset Password"}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={() => {
-                                            setShowPasswordForm(
-                                                false
-                                            );
-                                            setCurrentPassword(
-                                                ""
-                                            );
-                                            setNewPassword("");
-                                            setError("");
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-                </div>
+                </section>
             </div>
         </main>
     );

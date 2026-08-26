@@ -39,13 +39,13 @@ function AppRoutes() {
                 />
 
                 <Route
-                    path="/change-password"
-                    element={<ChangePassword />}
+                    path="/profile"
+                    element={<Profile />}
                 />
 
                 <Route
-                    path="/profile"
-                    element={<Profile />}
+                    path="/change-password"
+                    element={<ChangePassword />}
                 />
             </Route>
         </Routes>

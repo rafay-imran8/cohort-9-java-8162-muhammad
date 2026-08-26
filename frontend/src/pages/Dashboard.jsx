@@ -64,11 +64,12 @@ function Dashboard() {
             );
 
             setShowForm(false);
+
             await fetchContacts(search);
         } catch (err) {
             setError(
                 err.response?.data?.message ||
-                    "Unable to create contact."
+                "Unable to create contact."
             );
         } finally {
             setSaving(false);
@@ -77,130 +78,168 @@ function Dashboard() {
 
     return (
         <main className="page-container">
-            <div className="dashboard-header">
-                <div className="dashboard-title">
-                    <h1>Contacts</h1>
-                    <p>
-                        Manage and search through your contacts.
-                    </p>
-                </div>
+            <div className="dashboard-page">
+                <div className="page-header">
+                    <div>
+                        <span className="eyebrow">
+                            CONTACT MANAGEMENT
+                        </span>
 
-                <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => {
-                        setShowForm(true);
-                        setError("");
-                    }}
-                >
-                    + Add Contact
-                </button>
-            </div>
+                        <h1>Contacts</h1>
 
-            {showForm && (
-                <ContactForm
-                    onSubmit={handleCreateContact}
-                    onCancel={() => setShowForm(false)}
-                    loading={saving}
-                />
-            )}
-
-            <form
-                className="search-panel"
-                onSubmit={handleSearch}
-            >
-                <input
-                    className="form-input search-input"
-                    type="text"
-                    placeholder="Search by name, email, phone..."
-                    value={search}
-                    onChange={(event) =>
-                        setSearch(event.target.value)
-                    }
-                />
-
-                <button
-                    type="submit"
-                    className="btn btn-primary"
-                >
-                    Search
-                </button>
-
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                        setSearch("");
-                        fetchContacts();
-                    }}
-                >
-                    Clear
-                </button>
-            </form>
-
-            {error && (
-                <div className="message message-error">
-                    {error}
-                </div>
-            )}
-
-            {loading && (
-                <div className="loading-state">
-                    Loading contacts...
-                </div>
-            )}
-
-            {!loading &&
-                !error &&
-                contacts.length === 0 && (
-                    <div className="empty-state">
-                        <h2>No contacts found</h2>
                         <p>
-                            Add your first contact or try a
-                            different search.
+                            Manage, search and organize your contacts.
                         </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="primary-button add-contact-button"
+                        onClick={() => {
+                            setShowForm(true);
+                            setError("");
+                        }}
+                    >
+                        + Add Contact
+                    </button>
+                </div>
+
+                {showForm && (
+                    <div className="form-card">
+                        <div className="form-card-header">
+                            <div>
+                                <h2>Add Contact</h2>
+                                <p>
+                                    Enter the contact's information below.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="close-button"
+                                onClick={() =>
+                                    setShowForm(false)
+                                }
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <ContactForm
+                            onSubmit={handleCreateContact}
+                            onCancel={() =>
+                                setShowForm(false)
+                            }
+                            loading={saving}
+                        />
                     </div>
                 )}
 
-            {!loading && contacts.length > 0 && (
-                <div className="contacts-grid">
-                    {contacts.map((contact) => {
-                        const initials =
-                            `${contact.firstName?.[0] || ""}${
-                                contact.lastName?.[0] || ""
-                            }`.toUpperCase();
+                <form
+                    className="search-bar"
+                    onSubmit={handleSearch}
+                >
+                    <input
+                        type="text"
+                        placeholder="Search contacts..."
+                        value={search}
+                        onChange={(event) =>
+                            setSearch(event.target.value)
+                        }
+                    />
 
-                        return (
-                            <div
-                                className="contact-card"
-                                key={contact.id}
+                    <button
+                        type="submit"
+                        className="primary-button"
+                    >
+                        Search
+                    </button>
+
+                    <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                            setSearch("");
+                            fetchContacts();
+                        }}
+                    >
+                        Clear
+                    </button>
+                </form>
+
+                {loading && (
+                    <div className="loading-state">
+                        Loading contacts...
+                    </div>
+                )}
+
+                {error && (
+                    <div className="error-message">
+                        {error}
+                    </div>
+                )}
+
+                {!loading &&
+                    !error &&
+                    contacts.length === 0 && (
+                        <div className="empty-state">
+                            <h2>No contacts found</h2>
+                            <p>
+                                Add your first contact to get started.
+                            </p>
+
+                            <button
+                                type="button"
+                                className="primary-button"
+                                onClick={() =>
+                                    setShowForm(true)
+                                }
                             >
-                                <div className="contact-avatar">
-                                    {initials}
-                                </div>
+                                + Add Contact
+                            </button>
+                        </div>
+                    )}
 
-                                <h2>
-                                    {contact.firstName}{" "}
-                                    {contact.lastName}
-                                </h2>
-
-                                {contact.title && (
-                                    <p className="contact-card-title">
-                                        {contact.title}
-                                    </p>
-                                )}
-
-                                <Link
-                                    className="contact-card-link"
-                                    to={`/contacts/${contact.id}`}
+                {!loading &&
+                    contacts.length > 0 && (
+                        <div className="contacts-grid">
+                            {contacts.map((contact) => (
+                                <div
+                                    className="contact-card"
+                                    key={contact.id}
                                 >
-                                    View Contact →
-                                </Link>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                                    <div className="contact-card-content">
+                                        <div className="contact-avatar">
+                                            {contact.firstName
+                                                ?.charAt(0)
+                                                .toUpperCase()}
+                                        </div>
+
+                                        <div>
+                                            <h2>
+                                                {contact.firstName}{" "}
+                                                {contact.lastName}
+                                            </h2>
+
+                                            {contact.title && (
+                                                <p>
+                                                    {contact.title}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <Link
+                                        to={`/contacts/${contact.id}`}
+                                        className="view-contact-button"
+                                    >
+                                        View Contact →
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+            </div>
         </main>
     );
 }
