@@ -1,5 +1,4 @@
 package com.rafay.backend.controller;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rafay.backend.config.SecurityConfig;
 import com.rafay.backend.dto.request.ChangePasswordRequest;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -69,14 +69,18 @@ class AuthControllerTest {
         response.setPhoneNumber("1234567890");
         response.setMessage("User registered successfully");
 
-        when(authService.registerUser(any(RegisterRequest.class))).thenReturn(response);
+        when(authService.registerUser(any(RegisterRequest.class)))
+                .thenReturn(response);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("john@example.com"))
-                .andExpect(jsonPath("$.message").value("User registered successfully"));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("User registered successfully")
+                );
     }
 
     @Test
@@ -105,14 +109,41 @@ class AuthControllerTest {
         response.setMessage("Login successful");
         response.setToken("mocked-jwt-token");
 
-        when(authService.loginUser(any(LoginRequest.class))).thenReturn(response);
+        when(authService.loginUser(any(LoginRequest.class)))
+                .thenReturn(response);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("mocked-jwt-token"))
-                .andExpect(jsonPath("$.message").value("Login successful"));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("Login successful")
+                );
+    }
+
+    @Test
+    void login_databaseFailure_returnsInternalServerError() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setIdentifier("john@example.com");
+        request.setPassword("secret123");
+
+        when(authService.loginUser(any(LoginRequest.class)))
+                .thenThrow(
+                        new DataAccessResourceFailureException(
+                                "Database unavailable"
+                        )
+                );
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(
+                        jsonPath("$")
+                                .value("An internal server error occurred.")
+                );
     }
 
     @Test
@@ -126,14 +157,18 @@ class AuthControllerTest {
         response.setSuccess(true);
         response.setMessage("Password changed successfully");
 
-        when(authService.changePassword(any(ChangePasswordRequest.class))).thenReturn(response);
+        when(authService.changePassword(any(ChangePasswordRequest.class)))
+                .thenReturn(response);
 
         mockMvc.perform(post("/api/v1/auth/change")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Password changed successfully"));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("Password changed successfully")
+                );
     }
 
     @Test
