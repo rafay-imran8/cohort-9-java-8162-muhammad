@@ -6,6 +6,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,6 +21,9 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -50,12 +56,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        // Parse and validate JWT once
+        // Parse and validate JWT
         Optional<String> subject =
                 jwtService.extractSubject(token);
 
         // Invalid JWT → continue without authentication
         if (subject.isEmpty()) {
+
+            logger.warn("Invalid JWT received");
 
             filterChain.doFilter(request, response);
             return;
@@ -63,9 +71,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String email = subject.get();
 
-        User user = userRepository
-                .findByEmail(email)
-                .orElse(null);
+        User user;
+
+        try {
+
+            user = userRepository
+                    .findByEmail(email)
+                    .orElse(null);
+
+        } catch (DataAccessException ex) {
+
+            logger.error(
+                    "Failed to retrieve user while processing authentication",
+                    ex
+            );
+
+            response.setStatus(
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            );
+
+            response.setContentType("application/json");
+
+            response.getWriter().write(
+                    "{\"message\":\"Internal server error\"}"
+            );
+
+            return;
+        }
 
         if (user != null) {
 
@@ -84,6 +116,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder
                     .getContext()
                     .setAuthentication(authentication);
+
+            logger.debug(
+                    "JWT authentication successful"
+            );
         }
 
         filterChain.doFilter(request, response);

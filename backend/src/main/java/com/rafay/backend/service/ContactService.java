@@ -14,6 +14,8 @@ import com.rafay.backend.repository.ContactPhoneRepository;
 import com.rafay.backend.repository.ContactRepository;
 import com.rafay.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,9 @@ import java.util.List;
 
 @Service
 public class ContactService {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(ContactService.class);
 
     private final ContactRepository contactRepository;
     private final ContactEmailRepository contactEmailRepository;
@@ -39,70 +44,128 @@ public class ContactService {
         this.contactPhoneRepository = contactPhoneRepository;
         this.userRepository = userRepository;
     }
+
     @Transactional
     public ContactResponse createContact(
             ContactRequest request,
             String userEmail) {
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        logger.info("Contact creation attempt");
+
+        User user =
+                userRepository
+                        .findByEmail(userEmail)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found"
+                                )
+                        );
 
         Contact contact = new Contact();
 
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
+        contact.setFirstName(
+                request.getFirstName()
+        );
+        contact.setLastName(
+                request.getLastName()
+        );
+        contact.setTitle(
+                request.getTitle()
+        );
         contact.setUser(user);
 
-        Contact savedContact = contactRepository.save(contact);
+        Contact savedContact =
+                contactRepository.save(contact);
 
-        // Add emails
         if (request.getEmails() != null) {
 
-            request.getEmails().forEach(emailRequest -> {
+            request.getEmails()
+                    .forEach(emailRequest -> {
 
-                ContactEmail email = new ContactEmail();
+                        ContactEmail email =
+                                new ContactEmail();
 
-                email.setEmail(emailRequest.getEmail());
-                email.setLabel(emailRequest.getLabel());
-                email.setContact(savedContact);
+                        email.setEmail(
+                                emailRequest.getEmail()
+                        );
+                        email.setLabel(
+                                emailRequest.getLabel()
+                        );
+                        email.setContact(
+                                savedContact
+                        );
 
-                contactEmailRepository.save(email);
-            });
+                        contactEmailRepository.save(
+                                email
+                        );
+                    });
         }
 
-        // Add phone numbers
         if (request.getPhoneNumbers() != null) {
 
-            request.getPhoneNumbers().forEach(phoneRequest -> {
+            request.getPhoneNumbers()
+                    .forEach(phoneRequest -> {
 
-                ContactPhone phone = new ContactPhone();
+                        ContactPhone phone =
+                                new ContactPhone();
 
-                phone.setPhoneNumber(phoneRequest.getPhoneNumber());
-                phone.setLabel(phoneRequest.getLabel());
-                phone.setContact(savedContact);
+                        phone.setPhoneNumber(
+                                phoneRequest.getPhoneNumber()
+                        );
+                        phone.setLabel(
+                                phoneRequest.getLabel()
+                        );
+                        phone.setContact(
+                                savedContact
+                        );
 
-                contactPhoneRepository.save(phone);
-            });
+                        contactPhoneRepository.save(
+                                phone
+                        );
+                    });
         }
+
+        logger.info(
+                "Contact created successfully"
+        );
 
         return mapToResponse(savedContact);
     }
+
     public ContactResponse getContact(
             Long contactId,
             String userEmail) {
 
-        Contact contact = contactRepository
-                .findByIdAndUserEmail(contactId, userEmail)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Contact not found")
-                );
+        logger.info(
+                "Contact retrieval attempt"
+        );
+
+        Contact contact =
+                contactRepository
+                        .findByIdAndUserEmail(
+                                contactId,
+                                userEmail
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Contact not found"
+                                )
+                        );
+
+        logger.info(
+                "Contact retrieved successfully"
+        );
 
         return mapToResponse(contact);
     }
+
     public Page<ContactResponse> getContacts(
             String userEmail,
             Pageable pageable) {
+
+        logger.info(
+                "Contact list retrieval attempt"
+        );
 
         Page<Contact> contacts =
                 contactRepository.findByUserEmail(
@@ -110,12 +173,23 @@ public class ContactService {
                         pageable
                 );
 
-        return contacts.map(this::mapToResponse);
+        logger.info(
+                "Contact list retrieved successfully"
+        );
+
+        return contacts.map(
+                this::mapToResponse
+        );
     }
+
     public Page<ContactResponse> searchContacts(
             String userEmail,
             String search,
             Pageable pageable) {
+
+        logger.info(
+                "Contact search attempt"
+        );
 
         Page<Contact> contacts =
                 contactRepository
@@ -127,30 +201,60 @@ public class ContactService {
                                 pageable
                         );
 
-        return contacts.map(this::mapToResponse);
+        logger.info(
+                "Contact search completed successfully"
+        );
+
+        return contacts.map(
+                this::mapToResponse
+        );
     }
-    private ContactResponse mapToResponse(Contact contact) {
 
-        ContactResponse response = new ContactResponse();
+    private ContactResponse mapToResponse(
+            Contact contact) {
 
-        response.setId(contact.getId());
-        response.setFirstName(contact.getFirstName());
-        response.setLastName(contact.getLastName());
-        response.setTitle(contact.getTitle());
+        ContactResponse response =
+                new ContactResponse();
 
-        // Map emails
+        response.setId(
+                contact.getId()
+        );
+
+        response.setFirstName(
+                contact.getFirstName()
+        );
+
+        response.setLastName(
+                contact.getLastName()
+        );
+
+        response.setTitle(
+                contact.getTitle()
+        );
+
         List<ContactEmailResponse> emails =
                 contactEmailRepository
-                        .findByContactId(contact.getId())
+                        .findByContactId(
+                                contact.getId()
+                        )
                         .stream()
                         .map(email -> {
 
-                            ContactEmailResponse emailResponse =
+                            ContactEmailResponse
+                                    emailResponse =
                                     new ContactEmailResponse();
 
-                            emailResponse.setId(email.getId());
-                            emailResponse.setEmail(email.getEmail());
-                            emailResponse.setLabel(email.getLabel());
+                            emailResponse.setId(
+                                    email.getId()
+                            );
+
+                            emailResponse.setEmail(
+                                    email.getEmail()
+                            );
+
+                            emailResponse.setLabel(
+                                    email.getLabel()
+                            );
 
                             return emailResponse;
                         })
@@ -158,110 +262,190 @@ public class ContactService {
 
         response.setEmails(emails);
 
-        // Map phone numbers
         List<ContactPhoneResponse> phoneNumbers =
                 contactPhoneRepository
-                        .findByContactId(contact.getId())
+                        .findByContactId(
+                                contact.getId()
+                        )
                         .stream()
                         .map(phone -> {
 
-                            ContactPhoneResponse phoneResponse =
+                            ContactPhoneResponse
+                                    phoneResponse =
                                     new ContactPhoneResponse();
 
-                            phoneResponse.setId(phone.getId());
+                            phoneResponse.setId(
+                                    phone.getId()
+                            );
+
                             phoneResponse.setPhoneNumber(
                                     phone.getPhoneNumber()
                             );
-                            phoneResponse.setLabel(phone.getLabel());
+
+                            phoneResponse.setLabel(
+                                    phone.getLabel()
+                            );
 
                             return phoneResponse;
                         })
                         .toList();
 
-        response.setPhoneNumbers(phoneNumbers);
+        response.setPhoneNumbers(
+                phoneNumbers
+        );
 
         return response;
     }
+
     @Transactional
     public ContactResponse updateContact(
             Long contactId,
             ContactRequest request,
             String userEmail) {
 
-        Contact contact = contactRepository
-                .findByIdAndUserEmail(contactId, userEmail)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Contact not found")
-                );
+        logger.info(
+                "Contact update attempt"
+        );
 
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
+        Contact contact =
+                contactRepository
+                        .findByIdAndUserEmail(
+                                contactId,
+                                userEmail
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Contact not found"
+                                )
+                        );
+
+        contact.setFirstName(
+                request.getFirstName()
+        );
+
+        contact.setLastName(
+                request.getLastName()
+        );
+
+        contact.setTitle(
+                request.getTitle()
+        );
 
         Contact updatedContact =
                 contactRepository.save(contact);
 
-        // Replace existing emails
         List<ContactEmail> existingEmails =
-                contactEmailRepository.findByContactId(contactId);
+                contactEmailRepository
+                        .findByContactId(contactId);
 
-        contactEmailRepository.deleteAll(existingEmails);
+        contactEmailRepository.deleteAll(
+                existingEmails
+        );
 
         if (request.getEmails() != null) {
 
-            request.getEmails().forEach(emailRequest -> {
+            request.getEmails()
+                    .forEach(emailRequest -> {
 
-                ContactEmail email = new ContactEmail();
+                        ContactEmail email =
+                                new ContactEmail();
 
-                email.setEmail(emailRequest.getEmail());
-                email.setLabel(emailRequest.getLabel());
-                email.setContact(updatedContact);
+                        email.setEmail(
+                                emailRequest.getEmail()
+                        );
 
-                contactEmailRepository.save(email);
-            });
+                        email.setLabel(
+                                emailRequest.getLabel()
+                        );
+
+                        email.setContact(
+                                updatedContact
+                        );
+
+                        contactEmailRepository.save(
+                                email
+                        );
+                    });
         }
 
-        // Replace existing phone numbers
         List<ContactPhone> existingPhones =
-                contactPhoneRepository.findByContactId(contactId);
+                contactPhoneRepository
+                        .findByContactId(contactId);
 
-        contactPhoneRepository.deleteAll(existingPhones);
+        contactPhoneRepository.deleteAll(
+                existingPhones
+        );
 
         if (request.getPhoneNumbers() != null) {
 
-            request.getPhoneNumbers().forEach(phoneRequest -> {
+            request.getPhoneNumbers()
+                    .forEach(phoneRequest -> {
 
-                ContactPhone phone = new ContactPhone();
+                        ContactPhone phone =
+                                new ContactPhone();
 
-                phone.setPhoneNumber(phoneRequest.getPhoneNumber());
-                phone.setLabel(phoneRequest.getLabel());
-                phone.setContact(updatedContact);
+                        phone.setPhoneNumber(
+                                phoneRequest.getPhoneNumber()
+                        );
 
-                contactPhoneRepository.save(phone);
-            });
+                        phone.setLabel(
+                                phoneRequest.getLabel()
+                        );
+
+                        phone.setContact(
+                                updatedContact
+                        );
+
+                        contactPhoneRepository.save(
+                                phone
+                        );
+                    });
         }
 
-        return mapToResponse(updatedContact);
+        logger.info(
+                "Contact updated successfully"
+        );
+
+        return mapToResponse(
+                updatedContact
+        );
     }
+
     @Transactional
     public void deleteContact(
             Long contactId,
             String userEmail) {
 
-        Contact contact = contactRepository
-                .findByIdAndUserEmail(contactId, userEmail)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Contact not found")
-                );
+        logger.info(
+                "Contact deletion attempt"
+        );
+
+        Contact contact =
+                contactRepository
+                        .findByIdAndUserEmail(
+                                contactId,
+                                userEmail
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Contact not found"
+                                )
+                        );
 
         contactEmailRepository.deleteAll(
-                contactEmailRepository.findByContactId(contactId)
+                contactEmailRepository
+                        .findByContactId(contactId)
         );
 
         contactPhoneRepository.deleteAll(
-                contactPhoneRepository.findByContactId(contactId)
+                contactPhoneRepository
+                        .findByContactId(contactId)
         );
 
         contactRepository.delete(contact);
+
+        logger.info(
+                "Contact deleted successfully"
+        );
     }
 }
