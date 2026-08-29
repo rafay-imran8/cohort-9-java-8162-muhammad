@@ -11,14 +11,22 @@ function Dashboard() {
     const [error, setError] = useState("");
     const [showForm, setShowForm] = useState(false);
 
-    const fetchContacts = async (searchValue = "") => {
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
+    const pageSize = 10;
+
+    const fetchContacts = async (
+        searchValue = "",
+        pageNumber = 0
+    ) => {
         setLoading(true);
         setError("");
 
         try {
             const params = {
-                page: 0,
-                size: 10,
+                page: pageNumber,
+                size: pageSize,
             };
 
             if (searchValue.trim()) {
@@ -31,6 +39,14 @@ function Dashboard() {
             );
 
             setContacts(response.data.content || []);
+
+            setPage(
+                response.data.number ?? pageNumber
+            );
+
+            setTotalPages(
+                response.data.totalPages ?? 0
+            );
         } catch (err) {
             if (err.response?.status === 401) {
                 setError(
@@ -45,12 +61,13 @@ function Dashboard() {
     };
 
     useEffect(() => {
-        fetchContacts();
+        fetchContacts("", 0);
     }, []);
 
     const handleSearch = async (event) => {
         event.preventDefault();
-        await fetchContacts(search);
+
+        await fetchContacts(search, 0);
     };
 
     const handleCreateContact = async (contactData) => {
@@ -65,7 +82,7 @@ function Dashboard() {
 
             setShowForm(false);
 
-            await fetchContacts(search);
+            await fetchContacts(search, page);
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -73,6 +90,18 @@ function Dashboard() {
             );
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handlePrevious = () => {
+        if (page > 0) {
+            fetchContacts(search, page - 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (page < totalPages - 1) {
+            fetchContacts(search, page + 1);
         }
     };
 
@@ -160,7 +189,7 @@ function Dashboard() {
                         className="secondary-button"
                         onClick={() => {
                             setSearch("");
-                            fetchContacts();
+                            fetchContacts("", 0);
                         }}
                     >
                         Clear
@@ -184,6 +213,7 @@ function Dashboard() {
                     contacts.length === 0 && (
                         <div className="empty-state">
                             <h2>No contacts found</h2>
+
                             <p>
                                 Add your first contact to get started.
                             </p>
@@ -201,43 +231,74 @@ function Dashboard() {
                     )}
 
                 {!loading &&
+                    !error &&
                     contacts.length > 0 && (
-                        <div className="contacts-grid">
-                            {contacts.map((contact) => (
-                                <div
-                                    className="contact-card"
-                                    key={contact.id}
-                                >
-                                    <div className="contact-card-content">
-                                        <div className="contact-avatar">
-                                            {contact.firstName
-                                                ?.charAt(0)
-                                                .toUpperCase()}
-                                        </div>
-
-                                        <div>
-                                            <h2>
-                                                {contact.firstName}{" "}
-                                                {contact.lastName}
-                                            </h2>
-
-                                            {contact.title && (
-                                                <p>
-                                                    {contact.title}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <Link
-                                        to={`/contacts/${contact.id}`}
-                                        className="view-contact-button"
+                        <>
+                            <div className="contacts-grid">
+                                {contacts.map((contact) => (
+                                    <div
+                                        className="contact-card"
+                                        key={contact.id}
                                     >
-                                        View Contact →
-                                    </Link>
+                                        <div className="contact-card-content">
+                                            <div className="contact-avatar">
+                                                {contact.firstName
+                                                    ?.charAt(0)
+                                                    .toUpperCase()}
+                                            </div>
+
+                                            <div>
+                                                <h2>
+                                                    {contact.firstName}{" "}
+                                                    {contact.lastName}
+                                                </h2>
+
+                                                {contact.title && (
+                                                    <p>
+                                                        {contact.title}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <Link
+                                            to={`/contacts/${contact.id}`}
+                                            className="view-contact-button"
+                                        >
+                                            View Contact →
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="pagination">
+                                    <button
+                                        type="button"
+                                        className="secondary-button"
+                                        onClick={handlePrevious}
+                                        disabled={page === 0}
+                                    >
+                                        Previous
+                                    </button>
+
+                                    <span>
+                                        Page {page + 1} of {totalPages}
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        className="secondary-button"
+                                        onClick={handleNext}
+                                        disabled={
+                                            page === totalPages - 1
+                                        }
+                                    >
+                                        Next
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
+                            )}
+                        </>
                     )}
             </div>
         </main>
