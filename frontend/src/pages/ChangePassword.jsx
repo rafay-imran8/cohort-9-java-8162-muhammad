@@ -1,55 +1,162 @@
-import { Routes, Route } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../api/api";
 
-import Login from "../pages/Login";
-import Register from "../pages/Register";
-import Dashboard from "../pages/Dashboard";
-import ContactDetails from "../pages/ContactDetails";
-import ChangePassword from "../pages/ChangePassword";
-import Profile from "../pages/Profile";
+function ChangePassword() {
+    const navigate = useNavigate();
 
-import ProtectedRoute from "../components/ProtectedRoute";
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-function AppRoutes() {
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        setLoading(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            await api.post(
+                "/api/v1/auth/change",
+                {
+                    currentPassword,
+                    newPassword,
+                }
+            );
+
+            setSuccess(
+                "Password changed successfully."
+            );
+
+            setCurrentPassword("");
+            setNewPassword("");
+
+            setTimeout(() => {
+                navigate("/profile");
+            }, 1500);
+        } catch (err) {
+            if (err.response?.status === 401) {
+                setError(
+                    err.response?.data?.message ||
+                    "Current password is incorrect."
+                );
+            } else {
+                setError(
+                    err.response?.data?.message ||
+                    "Unable to change password."
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <Routes>
-            <Route
-                path="/login"
-                element={<Login />}
-            />
+        <main className="page-container">
+            <div className="profile-page">
+                <div className="page-header">
+                    <div>
+                        <span className="eyebrow">
+                            ACCOUNT
+                        </span>
 
-            <Route
-                path="/register"
-                element={<Register />}
-            />
+                        <h1>Change Password</h1>
 
-            <Route element={<ProtectedRoute />}>
-                <Route
-                    path="/"
-                    element={<Dashboard />}
-                />
+                        <p>
+                            Update your account password.
+                        </p>
+                    </div>
 
-                <Route
-                    path="/dashboard"
-                    element={<Dashboard />}
-                />
+                    <Link
+                        to="/profile"
+                        className="secondary-button"
+                    >
+                        Back to Profile
+                    </Link>
+                </div>
 
-                <Route
-                    path="/contacts/:id"
-                    element={<ContactDetails />}
-                />
+                <section className="profile-details">
+                    <h2>Change Your Password</h2>
 
-                <Route
-                    path="/change-password"
-                    element={<ChangePassword />}
-                />
+                    {error && (
+                        <div className="error-message">
+                            {error}
+                        </div>
+                    )}
 
-                <Route
-                    path="/profile"
-                    element={<Profile />}
-                />
-            </Route>
-        </Routes>
+                    {success && (
+                        <div className="success-message">
+                            {success}
+                        </div>
+                    )}
+
+                    <form
+                        className="contact-form"
+                        onSubmit={handleSubmit}
+                    >
+                        <div className="profile-field">
+                            <label htmlFor="currentPassword">
+                                Current Password
+                            </label>
+
+                            <input
+                                id="currentPassword"
+                                type="password"
+                                value={currentPassword}
+                                onChange={(event) =>
+                                    setCurrentPassword(
+                                        event.target.value
+                                    )
+                                }
+                                required
+                            />
+                        </div>
+
+                        <div className="profile-field">
+                            <label htmlFor="newPassword">
+                                New Password
+                            </label>
+
+                            <input
+                                id="newPassword"
+                                type="password"
+                                value={newPassword}
+                                onChange={(event) =>
+                                    setNewPassword(
+                                        event.target.value
+                                    )
+                                }
+                                required
+                                minLength={8}
+                            />
+                        </div>
+
+                        <div className="action-buttons">
+                            <button
+                                type="submit"
+                                className="primary-button"
+                                disabled={loading}
+                            >
+                                {loading
+                                    ? "Changing Password..."
+                                    : "Change Password"}
+                            </button>
+
+                            <Link
+                                to="/profile"
+                                className="secondary-button"
+                            >
+                                Cancel
+                            </Link>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </main>
     );
 }
 
-export default AppRoutes;
+export default ChangePassword;
