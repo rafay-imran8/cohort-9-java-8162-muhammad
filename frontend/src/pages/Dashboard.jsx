@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import ContactForm from "../components/ContactForm";
@@ -13,6 +13,8 @@ function Dashboard() {
 
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+
+    const fileInputRef = useRef(null);
 
     const pageSize = 10;
 
@@ -66,7 +68,6 @@ function Dashboard() {
 
     const handleSearch = async (event) => {
         event.preventDefault();
-
         await fetchContacts(search, 0);
     };
 
@@ -105,6 +106,358 @@ function Dashboard() {
         }
     };
 
+    const escapeCsvValue = (value) => {
+        const stringValue = String(value ?? "");
+
+        if (
+            stringValue.includes(",") ||
+            stringValue.includes('"') ||
+            stringValue.includes("\n") ||
+            stringValue.includes("\r")
+        ) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+
+        return stringValue;
+    };
+
+    const handleExport = async () => {
+        setError("");
+
+        try {
+            let allContacts = [];
+            let currentPage = 0;
+            let totalPagesToFetch = 1;
+
+            while (currentPage < totalPagesToFetch) {
+                const response = await api.get(
+                    "/api/v1/contacts",
+                    {
+                        params: {
+                            page: currentPage,
+                            size: pageSize,
+                        },
+                    }
+                );
+
+                const pageContacts =
+                    response.data.content || [];
+
+                allContacts = [
+                    ...allContacts,
+                    ...pageContacts,
+                ];
+
+                totalPagesToFetch =
+                    response.data.totalPages ?? 1;
+
+                currentPage++;
+            }
+
+            if (allContacts.length === 0) {
+                setError(
+                    "There are no contacts to export."
+                );
+                return;
+            }
+
+            const headers = [
+                "First Name",
+                "Last Name",
+                "Title",
+                "Emails",
+                "Phone Numbers",
+            ];
+
+            const rows = allContacts.map((contact) => {
+                const emails =
+                    contact.emails
+                        ?.map((email) => {
+                            const label = email.label
+                                ? ` (${email.label})`
+                                : "";
+
+                            return `${email.email}${label}`;
+                        })
+                        .join("; ") || "";
+
+                const phoneNumbers =
+                    contact.phoneNumbers
+                        ?.map((phone) => {
+                            const label = phone.label
+                                ? ` (${phone.label})`
+                                : "";
+
+                            return `${phone.phoneNumber}${label}`;
+                        })
+                        .join("; ") || "";
+
+                return [
+                    contact.firstName,
+                    contact.lastName,
+                    contact.title,
+                    emails,
+                    phoneNumbers,
+                ];
+            });
+
+            const csvContent = [
+                headers,
+                ...rows,
+            ]
+                .map((row) =>
+                    row
+                        .map(escapeCsvValue)
+                        .join(",")
+                )
+                .join("\r\n");
+
+            const blob = new Blob(
+                [csvContent],
+                {
+                    type: "text/csv;charset=utf-8;",
+                }
+            );
+
+            const url =
+                URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
+
+            link.href = url;
+            link.download = "contacts.csv";
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(
+                "Export failed:",
+                err
+            );
+
+            if (err.response?.status === 401) {
+                setError(
+                    "Your session has expired. Please log in again."
+                );
+            } else {
+                setError(
+                    err.response?.data?.message ||
+                    "Unable to export contacts."
+                );
+            }
+        }
+    };
+
+    const parseCsvLine = (line) => {
+        const values = [];
+        let current = "";
+        let insideQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const character = line[i];
+
+            if (character === '"') {
+                if (
+                    insideQuotes &&
+                    line[i + 1] === '"'
+                ) {
+                    current += '"';
+                    i++;
+                } else {
+                    insideQuotes = !insideQuotes;
+                }
+            } else if (
+                character === "," &&
+                !insideQuotes
+            ) {
+                values.push(current.trim());
+                current = "";
+            } else {
+                current += character;
+            }
+        }
+
+        values.push(current.trim());
+
+        return values;
+    };
+
+    const handleImport = async (event) => {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        setError("");
+
+        try {
+            const text = await file.text();
+
+            const lines = text
+                .split(/\r?\n/)
+                .filter(
+                    (line) => line.trim() !== ""
+                );
+
+            if (lines.length < 2) {
+                setError(
+                    "The CSV file does not contain any contacts."
+                );
+                return;
+            }
+
+            const headers =
+                parseCsvLine(lines[0]);
+
+            const requiredHeaders = [
+                "First Name",
+                "Last Name",
+                "Title",
+                "Emails",
+                "Phone Numbers",
+            ];
+
+            const validHeaders =
+                requiredHeaders.every(
+                    (header, index) =>
+                        headers[index] === header
+                );
+
+            if (!validHeaders) {
+                setError(
+                    "Invalid CSV format. Please use a contacts.csv file exported from ContactHub."
+                );
+                return;
+            }
+
+            let importedCount = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const values =
+                    parseCsvLine(lines[i]);
+
+                const [
+                    firstName,
+                    lastName,
+                    title,
+                    emailsValue,
+                    phonesValue,
+                ] = values;
+
+                if (
+                    !firstName ||
+                    !lastName
+                ) {
+                    continue;
+                }
+
+                const emails =
+                    emailsValue
+                        ? emailsValue
+                              .split(";")
+                              .map((item) =>
+                                  item.trim()
+                              )
+                              .filter(Boolean)
+                              .map((item) => {
+                                  const match =
+                                      item.match(
+                                          /^(.+?)\s*\((.+)\)$/
+                                      );
+
+                                  return {
+                                      email: match
+                                          ? match[1].trim()
+                                          : item,
+                                      label: match
+                                          ? match[2].trim()
+                                          : "",
+                                  };
+                              })
+                        : [];
+
+                const phoneNumbers =
+                    phonesValue
+                        ? phonesValue
+                              .split(";")
+                              .map((item) =>
+                                  item.trim()
+                              )
+                              .filter(Boolean)
+                              .map((item) => {
+                                  const match =
+                                      item.match(
+                                          /^(.+?)\s*\((.+)\)$/
+                                      );
+
+                                  return {
+                                      phoneNumber:
+                                          match
+                                              ? match[1].trim()
+                                              : item,
+                                      label: match
+                                          ? match[2].trim()
+                                          : "",
+                                  };
+                              })
+                        : [];
+
+                await api.post(
+                    "/api/v1/contacts",
+                    {
+                        firstName:
+                            firstName.trim(),
+                        lastName:
+                            lastName.trim(),
+                        title:
+                            title?.trim() || "",
+                        emails,
+                        phoneNumbers,
+                    }
+                );
+
+                importedCount++;
+            }
+
+            if (importedCount === 0) {
+                setError(
+                    "No valid contacts were found in the CSV file."
+                );
+                return;
+            }
+
+            await fetchContacts(
+                search,
+                page
+            );
+
+            alert(
+                `${importedCount} contact${
+                    importedCount === 1
+                        ? ""
+                        : "s"
+                } imported successfully.`
+            );
+        } catch (err) {
+            console.error(
+                "Import failed:",
+                err
+            );
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to import contacts."
+            );
+        } finally {
+            event.target.value = "";
+        }
+    };
+
     return (
         <main className="page-container">
             <div className="dashboard-page">
@@ -121,16 +474,46 @@ function Dashboard() {
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        className="primary-button add-contact-button"
-                        onClick={() => {
-                            setShowForm(true);
-                            setError("");
-                        }}
-                    >
-                        + Add Contact
-                    </button>
+                    <div className="button-row">
+                        <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={handleExport}
+                        >
+                            Export CSV
+                        </button>
+
+                        <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() =>
+                                fileInputRef.current?.click()
+                            }
+                        >
+                            Import CSV
+                        </button>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            style={{
+                                display: "none",
+                            }}
+                            onChange={handleImport}
+                        />
+
+                        <button
+                            type="button"
+                            className="primary-button add-contact-button"
+                            onClick={() => {
+                                setShowForm(true);
+                                setError("");
+                            }}
+                        >
+                            + Add Contact
+                        </button>
+                    </div>
                 </div>
 
                 {showForm && (
@@ -271,7 +654,7 @@ function Dashboard() {
                                 ))}
                             </div>
 
-                            {totalPages > 1 && (
+                            {totalPages > 0 && (
                                 <div className="pagination">
                                     <button
                                         type="button"
@@ -283,7 +666,8 @@ function Dashboard() {
                                     </button>
 
                                     <span>
-                                        Page {page + 1} of {totalPages}
+                                        Page {page + 1} of{" "}
+                                        {totalPages}
                                     </span>
 
                                     <button
@@ -291,7 +675,8 @@ function Dashboard() {
                                         className="secondary-button"
                                         onClick={handleNext}
                                         disabled={
-                                            page === totalPages - 1
+                                            page >=
+                                            totalPages - 1
                                         }
                                     >
                                         Next
