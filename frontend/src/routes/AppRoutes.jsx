@@ -25,7 +25,7 @@ function AppRoutes() {
             <Route element={<ProtectedRoute />}>
                 <Route
                     path="/"
-                    element={<Dashboard />}
+                    element={<Login />}
                 />
 
                 <Route
