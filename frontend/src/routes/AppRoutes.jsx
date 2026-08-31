@@ -1,4 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import {
+    Navigate,
+    Routes,
+    Route,
+} from "react-router-dom";
 
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -25,7 +29,12 @@ function AppRoutes() {
             <Route element={<ProtectedRoute />}>
                 <Route
                     path="/"
-                    element={<Login />}
+                    element={
+                        <Navigate
+                            to="/dashboard"
+                            replace
+                        />
+                    }
                 />
 
                 <Route

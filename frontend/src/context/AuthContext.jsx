@@ -1,4 +1,9 @@
-import { createContext, useContext, useState } from "react";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 import api from "../api/api";
 
 const AuthContext = createContext(null);
@@ -9,16 +14,48 @@ export function AuthProvider({ children }) {
     );
 
     const [user, setUser] = useState(() => {
-        const storedUser = localStorage.getItem("user");
+        const storedUser =
+            localStorage.getItem("user");
 
         try {
-            return storedUser ? JSON.parse(storedUser) : null;
+            return storedUser
+                ? JSON.parse(storedUser)
+                : null;
         } catch {
             return null;
         }
     });
 
-    const login = async (identifier, password) => {
+    const logout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        setToken(null);
+        setUser(null);
+    };
+
+    useEffect(() => {
+        const handleAuthenticationLogout = () => {
+            logout();
+        };
+
+        window.addEventListener(
+            "auth:logout",
+            handleAuthenticationLogout
+        );
+
+        return () => {
+            window.removeEventListener(
+                "auth:logout",
+                handleAuthenticationLogout
+            );
+        };
+    }, []);
+
+    const login = async (
+        identifier,
+        password
+    ) => {
         const response = await api.post(
             "/api/v1/auth/login",
             {
@@ -29,12 +66,17 @@ export function AuthProvider({ children }) {
 
         const newToken = response.data.token;
 
-        localStorage.setItem("token", newToken);
+        localStorage.setItem(
+            "token",
+            newToken
+        );
+
         setToken(newToken);
 
         /*
-         * Some backend responses return the user directly,
-         * while others may put it inside response.data.user.
+         * Some backend responses return the user
+         * directly, while others may put it inside
+         * response.data.user.
          */
         const loggedInUser =
             response.data.user ||
@@ -58,14 +100,6 @@ export function AuthProvider({ children }) {
         }
 
         return response.data;
-    };
-
-    const logout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        setToken(null);
-        setUser(null);
     };
 
     return (

@@ -1,16 +1,73 @@
-# React + Vite
+# Contact Management System - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React frontend for the Contact Management System.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* React
+* React Router
+* Axios
+* Vite
+* CSS
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Before running the frontend, make sure the Spring Boot backend is running and accessible.
 
-## Expanding the ESLint configuration
+The frontend communicates with the backend API through the configured API URL.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Installation
+
+From the `frontend` directory:
+
+```bash
+npm install
+```
+
+## Environment Configuration
+
+Create a `.env` file based on `.env.example`.
+
+Configure the backend API URL:
+
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+For production deployments, use an HTTPS API URL.
+
+## Development
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+The application will be available at the URL displayed by Vite.
+
+## Production Build
+
+Create a production build:
+
+```bash
+npm run build
+```
+
+To preview the production build locally:
+
+```bash
+npm run preview
+```
+
+## Authentication
+
+The frontend uses JWT-based authentication.
+
+After successful login, the authentication token is stored by the frontend and automatically attached to authenticated API requests.
+
+Protected routes require an authenticated user.
+
+## Backend Requirement
+
+The backend Spring Boot application must be running and accessible at the configured `VITE_API_URL` for login, registration, contact management, profile, and password operations to work correctly.

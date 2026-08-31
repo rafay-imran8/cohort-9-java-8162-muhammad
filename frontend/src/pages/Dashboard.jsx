@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import {
+    useEffect,
+    useRef,
+    useState,
+} from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import ContactForm from "../components/ContactForm";
@@ -40,7 +44,9 @@ function Dashboard() {
                 { params }
             );
 
-            setContacts(response.data.content || []);
+            setContacts(
+                response.data.content || []
+            );
 
             setPage(
                 response.data.number ?? pageNumber
@@ -55,7 +61,9 @@ function Dashboard() {
                     "Your session has expired. Please log in again."
                 );
             } else {
-                setError("Unable to load contacts.");
+                setError(
+                    "Unable to load contacts."
+                );
             }
         } finally {
             setLoading(false);
@@ -71,7 +79,9 @@ function Dashboard() {
         await fetchContacts(search, 0);
     };
 
-    const handleCreateContact = async (contactData) => {
+    const handleCreateContact = async (
+        contactData
+    ) => {
         setSaving(true);
         setError("");
 
@@ -83,11 +93,14 @@ function Dashboard() {
 
             setShowForm(false);
 
-            await fetchContacts(search, page);
+            await fetchContacts(
+                search,
+                page
+            );
         } catch (err) {
             setError(
                 err.response?.data?.message ||
-                "Unable to create contact."
+                    "Unable to create contact."
             );
         } finally {
             setSaving(false);
@@ -96,29 +109,49 @@ function Dashboard() {
 
     const handlePrevious = () => {
         if (page > 0) {
-            fetchContacts(search, page - 1);
+            fetchContacts(
+                search,
+                page - 1
+            );
         }
     };
 
     const handleNext = () => {
         if (page < totalPages - 1) {
-            fetchContacts(search, page + 1);
+            fetchContacts(
+                search,
+                page + 1
+            );
         }
     };
 
     const escapeCsvValue = (value) => {
-        const stringValue = String(value ?? "");
+        const stringValue = String(
+            value ?? ""
+        );
+
+        /*
+         * Prevent spreadsheet applications from
+         * interpreting exported values as formulas.
+         */
+        const safeValue =
+            /^[=+\-@]/.test(stringValue)
+                ? `'${stringValue}`
+                : stringValue;
 
         if (
-            stringValue.includes(",") ||
-            stringValue.includes('"') ||
-            stringValue.includes("\n") ||
-            stringValue.includes("\r")
+            safeValue.includes(",") ||
+            safeValue.includes('"') ||
+            safeValue.includes("\n") ||
+            safeValue.includes("\r")
         ) {
-            return `"${stringValue.replace(/"/g, '""')}"`;
+            return `"${safeValue.replace(
+                /"/g,
+                '""'
+            )}"`;
         }
 
-        return stringValue;
+        return safeValue;
     };
 
     const handleExport = async () => {
@@ -129,7 +162,9 @@ function Dashboard() {
             let currentPage = 0;
             let totalPagesToFetch = 1;
 
-            while (currentPage < totalPagesToFetch) {
+            while (
+                currentPage < totalPagesToFetch
+            ) {
                 const response = await api.get(
                     "/api/v1/contacts",
                     {
@@ -169,37 +204,46 @@ function Dashboard() {
                 "Phone Numbers",
             ];
 
-            const rows = allContacts.map((contact) => {
-                const emails =
-                    contact.emails
-                        ?.map((email) => {
-                            const label = email.label
-                                ? ` (${email.label})`
-                                : "";
+            const rows = allContacts.map(
+                (contact) => {
+                    /*
+                     * JSON preserves arbitrary labels and
+                     * values, including semicolons.
+                     */
+                    const emails = JSON.stringify(
+                        (contact.emails || []).map(
+                            (email) => ({
+                                email:
+                                    email.email || "",
+                                label:
+                                    email.label || "",
+                            })
+                        )
+                    );
 
-                            return `${email.email}${label}`;
-                        })
-                        .join("; ") || "";
+                    const phoneNumbers =
+                        JSON.stringify(
+                            (
+                                contact.phoneNumbers ||
+                                []
+                            ).map((phone) => ({
+                                phoneNumber:
+                                    phone.phoneNumber ||
+                                    "",
+                                label:
+                                    phone.label || "",
+                            }))
+                        );
 
-                const phoneNumbers =
-                    contact.phoneNumbers
-                        ?.map((phone) => {
-                            const label = phone.label
-                                ? ` (${phone.label})`
-                                : "";
-
-                            return `${phone.phoneNumber}${label}`;
-                        })
-                        .join("; ") || "";
-
-                return [
-                    contact.firstName,
-                    contact.lastName,
-                    contact.title,
-                    emails,
-                    phoneNumbers,
-                ];
-            });
+                    return [
+                        contact.firstName,
+                        contact.lastName,
+                        contact.title,
+                        emails,
+                        phoneNumbers,
+                    ];
+                }
+            );
 
             const csvContent = [
                 headers,
@@ -215,7 +259,8 @@ function Dashboard() {
             const blob = new Blob(
                 [csvContent],
                 {
-                    type: "text/csv;charset=utf-8;",
+                    type:
+                        "text/csv;charset=utf-8;",
                 }
             );
 
@@ -239,14 +284,16 @@ function Dashboard() {
                 err
             );
 
-            if (err.response?.status === 401) {
+            if (
+                err.response?.status === 401
+            ) {
                 setError(
                     "Your session has expired. Please log in again."
                 );
             } else {
                 setError(
                     err.response?.data?.message ||
-                    "Unable to export contacts."
+                        "Unable to export contacts."
                 );
             }
         }
@@ -257,7 +304,11 @@ function Dashboard() {
         let current = "";
         let insideQuotes = false;
 
-        for (let i = 0; i < line.length; i++) {
+        for (
+            let i = 0;
+            i < line.length;
+            i++
+        ) {
             const character = line[i];
 
             if (character === '"') {
@@ -268,13 +319,17 @@ function Dashboard() {
                     current += '"';
                     i++;
                 } else {
-                    insideQuotes = !insideQuotes;
+                    insideQuotes =
+                        !insideQuotes;
                 }
             } else if (
                 character === "," &&
                 !insideQuotes
             ) {
-                values.push(current.trim());
+                values.push(
+                    current.trim()
+                );
+
                 current = "";
             } else {
                 current += character;
@@ -286,8 +341,95 @@ function Dashboard() {
         return values;
     };
 
+    const parseContactMethods = (
+        value,
+        type
+    ) => {
+        if (!value?.trim()) {
+            return [];
+        }
+
+        /*
+         * New export format:
+         * JSON array containing the complete contact
+         * method objects.
+         */
+        try {
+            const parsed = JSON.parse(
+                value
+            );
+
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .map((item) => {
+                        if (type === "email") {
+                            return {
+                                email:
+                                    item.email ||
+                                    "",
+                                label:
+                                    item.label ||
+                                    "",
+                            };
+                        }
+
+                        return {
+                            phoneNumber:
+                                item.phoneNumber ||
+                                "",
+                            label:
+                                item.label ||
+                                "",
+                        };
+                    })
+                    .filter((item) =>
+                        type === "email"
+                            ? item.email
+                            : item.phoneNumber
+                    );
+            }
+        } catch {
+            /*
+             * Fall back to the previous CSV format so
+             * existing exported files can still be imported.
+             */
+        }
+
+        return value
+            .split(";")
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => {
+                const match =
+                    item.match(
+                        /^(.+?)\s*\((.+)\)$/
+                    );
+
+                if (type === "email") {
+                    return {
+                        email: match
+                            ? match[1].trim()
+                            : item,
+                        label: match
+                            ? match[2].trim()
+                            : "",
+                    };
+                }
+
+                return {
+                    phoneNumber: match
+                        ? match[1].trim()
+                        : item,
+                    label: match
+                        ? match[2].trim()
+                        : "",
+                };
+            });
+    };
+
     const handleImport = async (event) => {
-        const file = event.target.files?.[0];
+        const file =
+            event.target.files?.[0];
 
         if (!file) {
             return;
@@ -295,13 +437,17 @@ function Dashboard() {
 
         setError("");
 
+        let importedCount = 0;
+        let failedCount = 0;
+
         try {
             const text = await file.text();
 
             const lines = text
                 .split(/\r?\n/)
                 .filter(
-                    (line) => line.trim() !== ""
+                    (line) =>
+                        line.trim() !== ""
                 );
 
             if (lines.length < 2) {
@@ -325,7 +471,8 @@ function Dashboard() {
             const validHeaders =
                 requiredHeaders.every(
                     (header, index) =>
-                        headers[index] === header
+                        headers[index] ===
+                        header
                 );
 
             if (!validHeaders) {
@@ -335,9 +482,11 @@ function Dashboard() {
                 return;
             }
 
-            let importedCount = 0;
-
-            for (let i = 1; i < lines.length; i++) {
+            for (
+                let i = 1;
+                i < lines.length;
+                i++
+            ) {
                 const values =
                     parseCsvLine(lines[i]);
 
@@ -353,80 +502,52 @@ function Dashboard() {
                     !firstName ||
                     !lastName
                 ) {
+                    failedCount++;
                     continue;
                 }
 
                 const emails =
-                    emailsValue
-                        ? emailsValue
-                              .split(";")
-                              .map((item) =>
-                                  item.trim()
-                              )
-                              .filter(Boolean)
-                              .map((item) => {
-                                  const match =
-                                      item.match(
-                                          /^(.+?)\s*\((.+)\)$/
-                                      );
-
-                                  return {
-                                      email: match
-                                          ? match[1].trim()
-                                          : item,
-                                      label: match
-                                          ? match[2].trim()
-                                          : "",
-                                  };
-                              })
-                        : [];
+                    parseContactMethods(
+                        emailsValue,
+                        "email"
+                    );
 
                 const phoneNumbers =
-                    phonesValue
-                        ? phonesValue
-                              .split(";")
-                              .map((item) =>
-                                  item.trim()
-                              )
-                              .filter(Boolean)
-                              .map((item) => {
-                                  const match =
-                                      item.match(
-                                          /^(.+?)\s*\((.+)\)$/
-                                      );
+                    parseContactMethods(
+                        phonesValue,
+                        "phone"
+                    );
 
-                                  return {
-                                      phoneNumber:
-                                          match
-                                              ? match[1].trim()
-                                              : item,
-                                      label: match
-                                          ? match[2].trim()
-                                          : "",
-                                  };
-                              })
-                        : [];
+                try {
+                    await api.post(
+                        "/api/v1/contacts",
+                        {
+                            firstName:
+                                firstName.trim(),
+                            lastName:
+                                lastName.trim(),
+                            title:
+                                title?.trim() ||
+                                "",
+                            emails,
+                            phoneNumbers,
+                        }
+                    );
 
-                await api.post(
-                    "/api/v1/contacts",
-                    {
-                        firstName:
-                            firstName.trim(),
-                        lastName:
-                            lastName.trim(),
-                        title:
-                            title?.trim() || "",
-                        emails,
-                        phoneNumbers,
-                    }
-                );
+                    importedCount++;
+                } catch (rowError) {
+                    console.error(
+                        `Failed to import row ${i}:`,
+                        rowError
+                    );
 
-                importedCount++;
+                    failedCount++;
+                }
             }
 
             if (importedCount === 0) {
                 setError(
-                    "No valid contacts were found in the CSV file."
+                    "No contacts could be imported from the CSV file."
                 );
                 return;
             }
@@ -436,23 +557,45 @@ function Dashboard() {
                 page
             );
 
-            alert(
-                `${importedCount} contact${
-                    importedCount === 1
-                        ? ""
-                        : "s"
-                } imported successfully.`
-            );
+            if (failedCount > 0) {
+                setError(
+                    `${importedCount} contact${
+                        importedCount === 1
+                            ? ""
+                            : "s"
+                    } imported successfully, but ${failedCount} row${
+                        failedCount === 1
+                            ? ""
+                            : "s"
+                    } could not be imported.`
+                );
+            } else {
+                alert(
+                    `${importedCount} contact${
+                        importedCount === 1
+                            ? ""
+                            : "s"
+                    } imported successfully.`
+                );
+            }
         } catch (err) {
             console.error(
                 "Import failed:",
                 err
             );
 
-            setError(
-                err.response?.data?.message ||
-                "Unable to import contacts."
-            );
+            if (
+                err.response?.status === 401
+            ) {
+                setError(
+                    "Your session has expired. Please log in again."
+                );
+            } else {
+                setError(
+                    err.response?.data?.message ||
+                        "Unable to read the CSV file."
+                );
+            }
         } finally {
             event.target.value = "";
         }
@@ -470,7 +613,8 @@ function Dashboard() {
                         <h1>Contacts</h1>
 
                         <p>
-                            Manage, search and organize your contacts.
+                            Manage, search and
+                            organize your contacts.
                         </p>
                     </div>
 
@@ -478,7 +622,9 @@ function Dashboard() {
                         <button
                             type="button"
                             className="secondary-button"
-                            onClick={handleExport}
+                            onClick={
+                                handleExport
+                            }
                         >
                             Export CSV
                         </button>
@@ -500,7 +646,9 @@ function Dashboard() {
                             style={{
                                 display: "none",
                             }}
-                            onChange={handleImport}
+                            onChange={
+                                handleImport
+                            }
                         />
 
                         <button
@@ -520,9 +668,15 @@ function Dashboard() {
                     <div className="form-card">
                         <div className="form-card-header">
                             <div>
-                                <h2>Add Contact</h2>
+                                <h2>
+                                    Add Contact
+                                </h2>
+
                                 <p>
-                                    Enter the contact's information below.
+                                    Enter the
+                                    contact's
+                                    information
+                                    below.
                                 </p>
                             </div>
 
@@ -530,7 +684,9 @@ function Dashboard() {
                                 type="button"
                                 className="close-button"
                                 onClick={() =>
-                                    setShowForm(false)
+                                    setShowForm(
+                                        false
+                                    )
                                 }
                             >
                                 ×
@@ -538,9 +694,13 @@ function Dashboard() {
                         </div>
 
                         <ContactForm
-                            onSubmit={handleCreateContact}
+                            onSubmit={
+                                handleCreateContact
+                            }
                             onCancel={() =>
-                                setShowForm(false)
+                                setShowForm(
+                                    false
+                                )
                             }
                             loading={saving}
                         />
@@ -549,14 +709,18 @@ function Dashboard() {
 
                 <form
                     className="search-bar"
-                    onSubmit={handleSearch}
+                    onSubmit={
+                        handleSearch
+                    }
                 >
                     <input
                         type="text"
                         placeholder="Search contacts..."
                         value={search}
                         onChange={(event) =>
-                            setSearch(event.target.value)
+                            setSearch(
+                                event.target.value
+                            )
                         }
                     />
 
@@ -572,7 +736,10 @@ function Dashboard() {
                         className="secondary-button"
                         onClick={() => {
                             setSearch("");
-                            fetchContacts("", 0);
+                            fetchContacts(
+                                "",
+                                0
+                            );
                         }}
                     >
                         Clear
@@ -595,17 +762,23 @@ function Dashboard() {
                     !error &&
                     contacts.length === 0 && (
                         <div className="empty-state">
-                            <h2>No contacts found</h2>
+                            <h2>
+                                No contacts found
+                            </h2>
 
                             <p>
-                                Add your first contact to get started.
+                                Add your first
+                                contact to get
+                                started.
                             </p>
 
                             <button
                                 type="button"
                                 className="primary-button"
                                 onClick={() =>
-                                    setShowForm(true)
+                                    setShowForm(
+                                        true
+                                    )
                                 }
                             >
                                 + Add Contact
@@ -618,40 +791,54 @@ function Dashboard() {
                     contacts.length > 0 && (
                         <>
                             <div className="contacts-grid">
-                                {contacts.map((contact) => (
-                                    <div
-                                        className="contact-card"
-                                        key={contact.id}
-                                    >
-                                        <div className="contact-card-content">
-                                            <div className="contact-avatar">
-                                                {contact.firstName
-                                                    ?.charAt(0)
-                                                    .toUpperCase()}
-                                            </div>
-
-                                            <div>
-                                                <h2>
-                                                    {contact.firstName}{" "}
-                                                    {contact.lastName}
-                                                </h2>
-
-                                                {contact.title && (
-                                                    <p>
-                                                        {contact.title}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <Link
-                                            to={`/contacts/${contact.id}`}
-                                            className="view-contact-button"
+                                {contacts.map(
+                                    (contact) => (
+                                        <div
+                                            className="contact-card"
+                                            key={
+                                                contact.id
+                                            }
                                         >
-                                            View Contact →
-                                        </Link>
-                                    </div>
-                                ))}
+                                            <div className="contact-card-content">
+                                                <div className="contact-avatar">
+                                                    {contact.firstName
+                                                        ?.charAt(
+                                                            0
+                                                        )
+                                                        .toUpperCase()}
+                                                </div>
+
+                                                <div>
+                                                    <h2>
+                                                        {
+                                                            contact.firstName
+                                                        }{" "}
+                                                        {
+                                                            contact.lastName
+                                                        }
+                                                    </h2>
+
+                                                    {contact.title && (
+                                                        <p>
+                                                            {
+                                                                contact.title
+                                                            }
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <Link
+                                                to={`/contacts/${contact.id}`}
+                                                className="view-contact-button"
+                                            >
+                                                View
+                                                Contact
+                                                →
+                                            </Link>
+                                        </div>
+                                    )
+                                )}
                             </div>
 
                             {totalPages > 0 && (
@@ -659,24 +846,37 @@ function Dashboard() {
                                     <button
                                         type="button"
                                         className="secondary-button"
-                                        onClick={handlePrevious}
-                                        disabled={page === 0}
+                                        onClick={
+                                            handlePrevious
+                                        }
+                                        disabled={
+                                            page ===
+                                            0
+                                        }
                                     >
                                         Previous
                                     </button>
 
                                     <span>
-                                        Page {page + 1} of{" "}
-                                        {totalPages}
+                                        Page{" "}
+                                        {page +
+                                            1}{" "}
+                                        of{" "}
+                                        {
+                                            totalPages
+                                        }
                                     </span>
 
                                     <button
                                         type="button"
                                         className="secondary-button"
-                                        onClick={handleNext}
+                                        onClick={
+                                            handleNext
+                                        }
                                         disabled={
                                             page >=
-                                            totalPages - 1
+                                            totalPages -
+                                                1
                                         }
                                     >
                                         Next

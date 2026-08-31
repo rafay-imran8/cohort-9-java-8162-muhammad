@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+    useEffect,
+    useState,
+} from "react";
+import {
+    Link,
+    useNavigate,
+    useParams,
+} from "react-router-dom";
 import api from "../api/api";
 import ContactForm from "../components/ContactForm";
 
@@ -13,35 +20,54 @@ function ContactDetails() {
     const [error, setError] = useState("");
     const [editing, setEditing] = useState(false);
 
-    const fetchContact = async () => {
-        setLoading(true);
-        setError("");
-
-        try {
-            const response = await api.get(
-                `/api/v1/contacts/${id}`
-            );
-
-            setContact(response.data);
-        } catch (err) {
-            if (err.response?.status === 404) {
-                setError("Contact not found.");
-            } else if (err.response?.status === 401) {
-                setError(
-                    "Your session has expired. Please log in again."
-                );
-            } else {
-                setError(
-                    "Unable to load contact details."
-                );
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        let isCurrentRequest = true;
+
+        const fetchContact = async () => {
+            setLoading(true);
+            setError("");
+            setContact(null);
+
+            try {
+                const response = await api.get(
+                    `/api/v1/contacts/${id}`
+                );
+
+                if (!isCurrentRequest) {
+                    return;
+                }
+
+                setContact(response.data);
+            } catch (err) {
+                if (!isCurrentRequest) {
+                    return;
+                }
+
+                if (err.response?.status === 404) {
+                    setError("Contact not found.");
+                } else if (
+                    err.response?.status === 401
+                ) {
+                    setError(
+                        "Your session has expired. Please log in again."
+                    );
+                } else {
+                    setError(
+                        "Unable to load contact details."
+                    );
+                }
+            } finally {
+                if (isCurrentRequest) {
+                    setLoading(false);
+                }
+            }
+        };
+
         fetchContact();
+
+        return () => {
+            isCurrentRequest = false;
+        };
     }, [id]);
 
     const handleUpdate = async (contactData) => {
@@ -98,7 +124,9 @@ function ContactDetails() {
             <div>
                 <p>{error}</p>
 
-                <Link to="/dashboard"> Back to Dashboard </Link>
+                <Link to="/dashboard">
+                    Back to Dashboard
+                </Link>
             </div>
         );
     }
@@ -144,7 +172,8 @@ function ContactDetails() {
             </Link>
 
             <h1>
-                {contact.firstName} {contact.lastName}
+                {contact.firstName}{" "}
+                {contact.lastName}
             </h1>
 
             {contact.title && (
@@ -159,14 +188,17 @@ function ContactDetails() {
 
                 {contact.emails?.length > 0 ? (
                     <ul>
-                        {contact.emails.map((email) => (
-                            <li key={email.id}>
-                                <strong>
-                                    {email.label || "Email"}:
-                                </strong>{" "}
-                                {email.email}
-                            </li>
-                        ))}
+                        {contact.emails.map(
+                            (email) => (
+                                <li key={email.id}>
+                                    <strong>
+                                        {email.label ||
+                                            "Email"}:
+                                    </strong>{" "}
+                                    {email.email}
+                                </li>
+                            )
+                        )}
                     </ul>
                 ) : (
                     <p>No email addresses.</p>
@@ -185,7 +217,9 @@ function ContactDetails() {
                                         {phone.label ||
                                             "Phone"}:
                                     </strong>{" "}
-                                    {phone.phoneNumber}
+                                    {
+                                        phone.phoneNumber
+                                    }
                                 </li>
                             )
                         )}

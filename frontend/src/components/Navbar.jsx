@@ -1,8 +1,17 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+    Link,
+    useLocation,
+    useNavigate,
+} from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
-    const { isAuthenticated, logout, user } = useAuth();
+    const {
+        isAuthenticated,
+        logout,
+        user,
+    } = useAuth();
+
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -14,6 +23,15 @@ function Navbar() {
         user?.firstName ||
         user?.firstname ||
         "";
+
+    const isContactsActive =
+        location.pathname === "/dashboard" ||
+        location.pathname === "/" ||
+        location.pathname.startsWith("/contacts");
+
+    const isProfileActive =
+        location.pathname === "/profile" ||
+        location.pathname === "/change-password";
 
     const handleLogout = () => {
         logout();
@@ -33,8 +51,7 @@ function Navbar() {
                 <Link
                     to="/dashboard"
                     className={
-                        location.pathname === "/dashboard" ||
-                        location.pathname === "/"
+                        isContactsActive
                             ? "nav-link active"
                             : "nav-link"
                     }
@@ -45,7 +62,7 @@ function Navbar() {
                 <Link
                     to="/profile"
                     className={
-                        location.pathname === "/profile"
+                        isProfileActive
                             ? "nav-link active"
                             : "nav-link"
                     }
