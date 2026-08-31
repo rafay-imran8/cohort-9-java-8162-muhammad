@@ -2,6 +2,7 @@ package com.rafay.backend.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -33,6 +34,7 @@ public class GlobalExceptionHandler
                 .status(HttpStatus.CONFLICT)
                 .body(ex.getMessage());
     }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<String> handleBadCredentials(
             BadCredentialsException ex) {
@@ -41,6 +43,7 @@ public class GlobalExceptionHandler
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ex.getMessage());
     }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<String> handleResourceNotFound(
             ResourceNotFoundException ex) {
@@ -67,6 +70,20 @@ public class GlobalExceptionHandler
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<String> handleDataAccessException(
+            DataAccessException ex) {
+
+        logger.error(
+                "Database error",
+                ex
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An internal server error occurred.");
     }
 
     @Override
