@@ -1,0 +1,79 @@
+import axios from "axios";
+import storageAdapter from "../utils/storageAdapter";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
+
+const isSecureApiUrl = (baseURL) => {
+    const urlToCheck =
+        baseURL || window.location.origin;
+
+    try {
+        const url = new URL(
+            urlToCheck,
+            window.location.origin
+        );
+
+        // Allow HTTP only for local development.
+        const isLocalhost =
+            url.hostname === "localhost" ||
+            url.hostname === "127.0.0.1";
+
+        return (
+            url.protocol === "https:" ||
+            (url.protocol === "http:" && isLocalhost)
+        );
+    } catch {
+        return false;
+    }
+};
+
+api.interceptors.request.use(
+    (config) => {
+        const token =
+            storageAdapter.getItem("token");
+
+        if (
+            token &&
+            !isSecureApiUrl(config.baseURL)
+        ) {
+            return Promise.reject(
+                new Error(
+                    "Refusing to send authentication credentials over an insecure connection."
+                )
+            );
+        }
+
+        if (token) {
+            config.headers.Authorization =
+                `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            storageAdapter.removeItem("token");
+            storageAdapter.removeItem("user");
+
+            window.dispatchEvent(
+                new Event("auth:logout")
+            );
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+export default api;
