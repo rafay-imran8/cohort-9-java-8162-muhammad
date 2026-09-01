@@ -1,21 +1,32 @@
 import {
-    createContext,
-    useContext,
     useEffect,
     useState,
 } from "react";
 import api from "../api/api";
+import storageAdapter from "../utils/storageAdapter";
+import { AuthContext } from "./AuthContextDefinition";
 
-const AuthContext = createContext(null);
+// Re-export for backward compatibility
+export { AuthContext };
 
 export function AuthProvider({ children }) {
-    const [token, setToken] = useState(
-        localStorage.getItem("token")
-    );
+    const [token, setToken] = useState(() => {
+        const storedToken =
+            storageAdapter.getItem("token");
+
+        // Only use token if it's a non-empty string
+        return (
+            storedToken &&
+            typeof storedToken === "string" &&
+            storedToken.trim().length > 0
+                ? storedToken
+                : null
+        );
+    });
 
     const [user, setUser] = useState(() => {
         const storedUser =
-            localStorage.getItem("user");
+            storageAdapter.getItem("user");
 
         try {
             return storedUser
@@ -27,8 +38,8 @@ export function AuthProvider({ children }) {
     });
 
     const logout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        storageAdapter.removeItem("token");
+        storageAdapter.removeItem("user");
 
         setToken(null);
         setUser(null);
@@ -66,12 +77,20 @@ export function AuthProvider({ children }) {
 
         const newToken = response.data.token;
 
-        localStorage.setItem(
-            "token",
-            newToken
-        );
+        // Only save and set the token if it's a
+        // non-empty string
+        if (
+            newToken &&
+            typeof newToken === "string" &&
+            newToken.trim().length > 0
+        ) {
+            storageAdapter.setItem(
+                "token",
+                newToken
+            );
 
-        setToken(newToken);
+            setToken(newToken);
+        }
 
         /*
          * Some backend responses return the user
@@ -91,7 +110,7 @@ export function AuthProvider({ children }) {
                 loggedInUser.phoneNumber
             )
         ) {
-            localStorage.setItem(
+            storageAdapter.setItem(
                 "user",
                 JSON.stringify(loggedInUser)
             );
@@ -115,8 +134,4 @@ export function AuthProvider({ children }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuth() {
-    return useContext(AuthContext);
 }

@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 function ChangePassword() {
     const navigate = useNavigate();
+    const redirectTimeoutRef = useRef(null);
 
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
+    useEffect(() => {
+        return () => {
+            // Clean up redirect timeout on unmount
+            if (redirectTimeoutRef.current) {
+                clearTimeout(redirectTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -34,9 +44,12 @@ function ChangePassword() {
             setCurrentPassword("");
             setNewPassword("");
 
-            setTimeout(() => {
-                navigate("/profile");
-            }, 1500);
+            redirectTimeoutRef.current = setTimeout(
+                () => {
+                    navigate("/profile");
+                },
+                1500
+            );
         } catch (err) {
             if (err.response?.status === 401) {
                 setError(

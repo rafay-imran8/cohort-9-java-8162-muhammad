@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useRef,
     useState,
@@ -22,57 +23,73 @@ function Dashboard() {
 
     const pageSize = 10;
 
-    const fetchContacts = async (
-        searchValue = "",
-        pageNumber = 0
-    ) => {
-        setLoading(true);
-        setError("");
+    const fetchContacts = useCallback(
+        async (searchValue = "", pageNumber = 0) => {
+            setLoading(true);
+            setError("");
 
-        try {
-            const params = {
-                page: pageNumber,
-                size: pageSize,
-            };
+            try {
+                const params = {
+                    page: pageNumber,
+                    size: pageSize,
+                };
 
-            if (searchValue.trim()) {
-                params.search = searchValue.trim();
-            }
+                if (searchValue.trim()) {
+                    params.search =
+                        searchValue.trim();
+                }
 
-            const response = await api.get(
-                "/api/v1/contacts",
-                { params }
-            );
-
-            setContacts(
-                response.data.content || []
-            );
-
-            setPage(
-                response.data.number ?? pageNumber
-            );
-
-            setTotalPages(
-                response.data.totalPages ?? 0
-            );
-        } catch (err) {
-            if (err.response?.status === 401) {
-                setError(
-                    "Your session has expired. Please log in again."
+                const response = await api.get(
+                    "/api/v1/contacts",
+                    { params }
                 );
-            } else {
-                setError(
-                    "Unable to load contacts."
+
+                setContacts(
+                    response.data.content || []
                 );
+
+                setPage(
+                    response.data.number ??
+                    pageNumber
+                );
+
+                setTotalPages(
+                    response.data.totalPages ?? 0
+                );
+            } catch (err) {
+                if (
+                    err.response?.status === 401
+                ) {
+                    setError(
+                        "Your session has expired. Please log in again."
+                    );
+                } else {
+                    setError(
+                        "Unable to load contacts."
+                    );
+                }
+            } finally {
+                setLoading(false);
             }
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+        []
+    );
 
     useEffect(() => {
-        fetchContacts("", 0);
-    }, []);
+        let isMounted = true;
+
+        const loadContacts = async () => {
+            if (isMounted) {
+                await fetchContacts("", 0);
+            }
+        };
+
+        loadContacts();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchContacts]);
 
     const handleSearch = async (event) => {
         event.preventDefault();

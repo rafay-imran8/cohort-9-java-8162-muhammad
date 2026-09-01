@@ -1,4 +1,5 @@
 import axios from "axios";
+import storageAdapter from "../utils/storageAdapter";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -36,7 +37,8 @@ const isSecureApiUrl = (baseURL) => {
 
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        const token =
+            storageAdapter.getItem("token");
 
         if (
             token &&
@@ -63,8 +65,8 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
+            storageAdapter.removeItem("token");
+            storageAdapter.removeItem("user");
 
             window.dispatchEvent(
                 new Event("auth:logout")
