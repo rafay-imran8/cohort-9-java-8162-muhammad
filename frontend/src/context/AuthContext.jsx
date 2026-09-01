@@ -38,11 +38,17 @@ export function AuthProvider({ children }) {
     });
 
     const logout = () => {
-        storageAdapter.removeItem("token");
-        storageAdapter.removeItem("user");
+        const tokenRemoved =
+            storageAdapter.removeItem("token");
+        const userRemoved =
+            storageAdapter.removeItem("user");
 
-        setToken(null);
-        setUser(null);
+        // Only clear in-memory state if removal
+        // was successful
+        if (tokenRemoved && userRemoved) {
+            setToken(null);
+            setUser(null);
+        }
     };
 
     useEffect(() => {
@@ -84,10 +90,17 @@ export function AuthProvider({ children }) {
             typeof newToken === "string" &&
             newToken.trim().length > 0
         ) {
-            storageAdapter.setItem(
-                "token",
-                newToken
-            );
+            const tokenSaved =
+                storageAdapter.setItem(
+                    "token",
+                    newToken
+                );
+
+            if (!tokenSaved) {
+                throw new Error(
+                    "Failed to save authentication token. Please try logging in again."
+                );
+            }
 
             setToken(newToken);
         }

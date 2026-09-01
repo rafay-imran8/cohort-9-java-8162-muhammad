@@ -553,6 +553,17 @@ function Dashboard() {
 
                     importedCount++;
                 } catch (rowError) {
+                    // Rethrow 401 errors to stop
+                    // the import and let the outer
+                    // handler show the session-expired
+                    // message
+                    if (
+                        rowError.response?.status ===
+                        401
+                    ) {
+                        throw rowError;
+                    }
+
                     console.error(
                         `Failed to import row ${i}:`,
                         rowError

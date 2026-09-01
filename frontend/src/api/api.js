@@ -11,13 +11,12 @@ const api = axios.create({
 });
 
 const isSecureApiUrl = (baseURL) => {
-    if (!baseURL) {
-        return true;
-    }
+    const urlToCheck =
+        baseURL || window.location.origin;
 
     try {
         const url = new URL(
-            baseURL,
+            urlToCheck,
             window.location.origin
         );
 
