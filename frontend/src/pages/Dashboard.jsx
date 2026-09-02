@@ -462,6 +462,87 @@ function Dashboard() {
         }
     };
 
+    const isValidContactsCsv = (headers) => {
+        const requiredHeaders = [
+            "First Name",
+            "Last Name",
+            "Title",
+            "Emails",
+            "Phone Numbers",
+        ];
+
+        return requiredHeaders.every(
+            (header, index) =>
+                headers[index] === header
+        );
+    };
+
+    const buildContactPayload = (values) => {
+        const [
+            firstName,
+            lastName,
+            title,
+            emailsValue,
+            phonesValue,
+        ] = values;
+
+        if (!firstName || !lastName) {
+            return null;
+        }
+
+        return {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            title: title?.trim() || "",
+            emails: parseContactMethods(
+                emailsValue,
+                "email"
+            ),
+            phoneNumbers: parseContactMethods(
+                phonesValue,
+                "phone"
+            ),
+        };
+    };
+
+    const importCsvContacts = async (lines) => {
+        let importedCount = 0;
+        let failedCount = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+            const payload = buildContactPayload(
+                parseCsvLine(lines[i])
+            );
+
+            if (!payload) {
+                failedCount++;
+                continue;
+            }
+
+            try {
+                await api.post(
+                    "/api/v1/contacts",
+                    payload
+                );
+                importedCount++;
+            } catch (rowError) {
+                if (
+                    rowError.response?.status === 401
+                ) {
+                    throw rowError;
+                }
+
+                console.error(
+                    `Failed to import row ${i}:`,
+                    rowError
+                );
+                failedCount++;
+            }
+        }
+
+        return { importedCount, failedCount };
+    };
+
     const handleImport = async (event) => {
         const file =
             event.target.files?.[0];
@@ -472,18 +553,11 @@ function Dashboard() {
 
         setError("");
 
-        let importedCount = 0;
-        let failedCount = 0;
-
         try {
             const text = await file.text();
-
             const lines = text
                 .split(/\r?\n/)
-                .filter(
-                    (line) =>
-                        line.trim() !== ""
-                );
+                .filter((line) => line.trim() !== "");
 
             if (lines.length < 2) {
                 setError(
@@ -492,104 +566,19 @@ function Dashboard() {
                 return;
             }
 
-            const headers =
-                parseCsvLine(lines[0]);
+            const headers = parseCsvLine(lines[0]);
 
-            const requiredHeaders = [
-                "First Name",
-                "Last Name",
-                "Title",
-                "Emails",
-                "Phone Numbers",
-            ];
-
-            const validHeaders =
-                requiredHeaders.every(
-                    (header, index) =>
-                        headers[index] ===
-                        header
-                );
-
-            if (!validHeaders) {
+            if (!isValidContactsCsv(headers)) {
                 setError(
                     "Invalid CSV format. Please use a contacts.csv file exported from ContactHub."
                 );
                 return;
             }
 
-            for (
-                let i = 1;
-                i < lines.length;
-                i++
-            ) {
-                const values =
-                    parseCsvLine(lines[i]);
-
-                const [
-                    firstName,
-                    lastName,
-                    title,
-                    emailsValue,
-                    phonesValue,
-                ] = values;
-
-                if (
-                    !firstName ||
-                    !lastName
-                ) {
-                    failedCount++;
-                    continue;
-                }
-
-                const emails =
-                    parseContactMethods(
-                        emailsValue,
-                        "email"
-                    );
-
-                const phoneNumbers =
-                    parseContactMethods(
-                        phonesValue,
-                        "phone"
-                    );
-
-                try {
-                    await api.post(
-                        "/api/v1/contacts",
-                        {
-                            firstName:
-                                firstName.trim(),
-                            lastName:
-                                lastName.trim(),
-                            title:
-                                title?.trim() ||
-                                "",
-                            emails,
-                            phoneNumbers,
-                        }
-                    );
-
-                    importedCount++;
-                } catch (rowError) {
-                    // Rethrow 401 errors to stop
-                    // the import and let the outer
-                    // handler show the session-expired
-                    // message
-                    if (
-                        rowError.response?.status ===
-                        401
-                    ) {
-                        throw rowError;
-                    }
-
-                    console.error(
-                        `Failed to import row ${i}:`,
-                        rowError
-                    );
-
-                    failedCount++;
-                }
-            }
+            const {
+                importedCount,
+                failedCount,
+            } = await importCsvContacts(lines);
 
             if (importedCount === 0) {
                 setError(
@@ -598,41 +587,31 @@ function Dashboard() {
                 return;
             }
 
-            await fetchContacts(
-                search,
-                page
-            );
+            await fetchContacts(search, page);
 
             if (failedCount > 0) {
                 setError(
                     `${importedCount} contact${
-                        importedCount === 1
-                            ? ""
-                            : "s"
+                        importedCount === 1 ? "" : "s"
                     } imported successfully, but ${failedCount} row${
-                        failedCount === 1
-                            ? ""
-                            : "s"
+                        failedCount === 1 ? "" : "s"
                     } could not be imported.`
                 );
-            } else {
-                alert(
-                    `${importedCount} contact${
-                        importedCount === 1
-                            ? ""
-                            : "s"
-                    } imported successfully.`
-                );
+                return;
             }
+
+            alert(
+                `${importedCount} contact${
+                    importedCount === 1 ? "" : "s"
+                } imported successfully.`
+            );
         } catch (err) {
             console.error(
                 "Import failed:",
                 err
             );
 
-            if (
-                err.response?.status === 401
-            ) {
+            if (err.response?.status === 401) {
                 setError(
                     "Your session has expired. Please log in again."
                 );
