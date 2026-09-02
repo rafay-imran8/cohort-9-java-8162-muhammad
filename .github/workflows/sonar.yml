@@ -48,4 +48,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar -Dsonar.projectBaseDir=.. -Dsonar.config=../sonar-project.properties
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar -Dsonar.projectBaseDir=.. -Dsonar.config=../sonar-project.properties -Dsonar.organization=rafay-imran8 -Dsonar.projectKey=rafay-imran8_prj -Dsonar.projectName=prj
