@@ -24,6 +24,7 @@ public class ContactPhone {
     private Contact contact;
 
     public ContactPhone() {
+        // JPA requires a public no-arg constructor. This default constructor is intentionally empty.
     }
 
     // Getters and setters

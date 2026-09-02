@@ -33,6 +33,9 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
+                // This API is stateless: authentication is performed via JWT bearer tokens,
+                // not cookies or server-side sessions. CSRF protection is therefore disabled
+                // only for this REST API surface, while the app still enforces request auth.
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .cors(cors -> {})

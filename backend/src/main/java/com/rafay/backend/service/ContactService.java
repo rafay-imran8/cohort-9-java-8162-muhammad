@@ -25,6 +25,8 @@ import java.util.List;
 @Service
 public class ContactService {
 
+    private static final String CONTACT_NOT_FOUND_MESSAGE = "Contact not found";
+
     private static final Logger logger =
             LoggerFactory.getLogger(ContactService.class);
 
@@ -148,7 +150,7 @@ public class ContactService {
                         )
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Contact not found"
+                                        CONTACT_NOT_FOUND_MESSAGE
                                 )
                         );
 
@@ -315,7 +317,7 @@ public class ContactService {
                         )
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Contact not found"
+                                        CONTACT_NOT_FOUND_MESSAGE
                                 )
                         );
 
@@ -428,7 +430,7 @@ public class ContactService {
                         )
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Contact not found"
+                                        CONTACT_NOT_FOUND_MESSAGE
                                 )
                         );
 

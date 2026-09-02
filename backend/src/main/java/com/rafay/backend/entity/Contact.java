@@ -43,6 +43,7 @@ public class Contact {
     private List<ContactPhone> phoneNumbers = new ArrayList<>();
 
     public Contact() {
+        // JPA requires a public no-arg constructor. This default constructor is intentionally empty.
     }
 
     // Getters and setters

@@ -22,7 +22,7 @@ import java.util.Optional;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger logger =
+    private static final Logger log =
             LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Invalid JWT → continue without authentication
         if (subject.isEmpty()) {
 
-            logger.warn("Invalid JWT received");
+            log.warn("Invalid JWT received");
 
             filterChain.doFilter(request, response);
             return;
@@ -81,7 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (DataAccessException ex) {
 
-            logger.error(
+            log.error(
                     "Failed to retrieve user while processing authentication",
                     ex
             );
@@ -117,7 +117,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .getContext()
                     .setAuthentication(authentication);
 
-            logger.debug(
+            log.debug(
                     "JWT authentication successful"
             );
         }

@@ -18,14 +18,14 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler
         extends ResponseEntityExceptionHandler {
 
-    private static final Logger logger =
+    private static final Logger log =
             LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<String> handleConflict(
             ConflictException ex) {
 
-        logger.warn(
+        log.warn(
                 "Conflict exception: {}",
                 ex.getMessage()
         );
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler
     public ResponseEntity<String> handleResourceNotFound(
             ResourceNotFoundException ex) {
 
-        logger.warn(
+        log.warn(
                 "Resource not found: {}",
                 ex.getMessage()
         );
@@ -62,7 +62,7 @@ public class GlobalExceptionHandler
     public ResponseEntity<String> handleIllegalArgumentException(
             IllegalArgumentException ex) {
 
-        logger.warn(
+        log.warn(
                 "Invalid argument: {}",
                 ex.getMessage()
         );
@@ -76,7 +76,7 @@ public class GlobalExceptionHandler
     public ResponseEntity<String> handleDataAccessException(
             DataAccessException ex) {
 
-        logger.error(
+        log.error(
                 "Database error",
                 ex
         );
@@ -103,7 +103,7 @@ public class GlobalExceptionHandler
                 .findFirst()
                 .orElse("Invalid request");
 
-        logger.warn(
+        log.warn(
                 "Request validation failed: {}",
                 message
         );
@@ -122,12 +122,12 @@ public class GlobalExceptionHandler
             WebRequest request) {
 
         if (statusCode.is5xxServerError()) {
-            logger.error(
+            log.error(
                     "Internal server error",
                     ex
             );
         } else {
-            logger.warn(
+            log.warn(
                     "HTTP request error: {}",
                     ex.getMessage()
             );
