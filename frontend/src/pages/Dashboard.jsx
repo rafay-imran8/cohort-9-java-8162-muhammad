@@ -358,6 +358,56 @@ function Dashboard() {
         return values;
     };
 
+    const parseLabeledValue = (
+        item,
+        type
+    ) => {
+        const trimmedItem = item.trim();
+
+        const openParenIndex =
+            trimmedItem.lastIndexOf("(");
+        const closeParenIndex =
+            trimmedItem.lastIndexOf(")");
+
+        const hasLabel =
+            openParenIndex > 0 &&
+            closeParenIndex ===
+                trimmedItem.length - 1;
+
+        if (!hasLabel) {
+            return type === "email"
+                ? {
+                      email: trimmedItem,
+                      label: "",
+                  }
+                : {
+                      phoneNumber:
+                          trimmedItem,
+                      label: "",
+                  };
+        }
+
+        const value = trimmedItem
+            .slice(0, openParenIndex)
+            .trim();
+        const label = trimmedItem
+            .slice(
+                openParenIndex + 1,
+                closeParenIndex
+            )
+            .trim();
+
+        return type === "email"
+            ? {
+                  email: value,
+                  label,
+              }
+            : {
+                  phoneNumber: value,
+                  label,
+              };
+    };
+
     const parseContactMethods = (
         value,
         type
@@ -366,82 +416,50 @@ function Dashboard() {
             return [];
         }
 
-        /*
-         * New export format:
-         * JSON array containing the complete contact
-         * method objects.
-         */
         try {
             const parsed = JSON.parse(
                 value
             );
 
-            if (Array.isArray(parsed)) {
-                return parsed
-                    .map((item) => {
-                        if (type === "email") {
-                            return {
-                                email:
-                                    item.email ||
-                                    "",
-                                label:
-                                    item.label ||
-                                    "",
-                            };
-                        }
-
-                        return {
-                            phoneNumber:
-                                item.phoneNumber ||
-                                "",
-                            label:
-                                item.label ||
-                                "",
-                        };
-                    })
-                    .filter((item) =>
-                        type === "email"
-                            ? item.email
-                            : item.phoneNumber
-                    );
+            if (!Array.isArray(parsed)) {
+                return [];
             }
-        } catch {
-            /*
-             * Fall back to the previous CSV format so
-             * existing exported files can still be imported.
-             */
-        }
 
-        return value
-            .split(";")
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .map((item) => {
-                const match =
-                    item.match(
-                        /^(.+?)\s*\((.+)\)$/
-                    );
+            return parsed
+                .map((item) => {
+                    if (type === "email") {
+                        return {
+                            email:
+                                item.email || "",
+                            label:
+                                item.label || "",
+                        };
+                    }
 
-                if (type === "email") {
                     return {
-                        email: match
-                            ? match[1].trim()
-                            : item,
-                        label: match
-                            ? match[2].trim()
-                            : "",
+                        phoneNumber:
+                            item.phoneNumber || "",
+                        label:
+                            item.label || "",
                     };
-                }
-
-                return {
-                    phoneNumber: match
-                        ? match[1].trim()
-                        : item,
-                    label: match
-                        ? match[2].trim()
-                        : "",
-                };
-            });
+                })
+                .filter((item) =>
+                    type === "email"
+                        ? item.email
+                        : item.phoneNumber
+                );
+        } catch {
+            return value
+                .split(";")
+                .map((item) => item.trim())
+                .filter(Boolean)
+                .map((item) =>
+                    parseLabeledValue(
+                        item,
+                        type
+                    )
+                );
+        }
     };
 
     const handleImport = async (event) => {
