@@ -426,6 +426,12 @@ function Dashboard() {
             }
 
             return parsed
+                .filter(
+                    (item) =>
+                        item !== null &&
+                        typeof item === "object" &&
+                        !Array.isArray(item)
+                )
                 .map((item) => {
                     if (type === "email") {
                         return {
